@@ -45,6 +45,15 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
+      - name: Regenerate synthetic training data
+        # scoring_service/data/*.csv is gitignored (regenerable, kept out of
+        # the repo deliberately) -- Gate A's tests need it to reconstruct the
+        # same train/test split the committed models were evaluated against.
+        # The generator is fully deterministic (fixed seed) -- verified this
+        # produces byte-identical output to what trained the committed model
+        # artifacts, so this is not a "different data, different result" risk.
+        run: python -m scoring_service.data.generate_synthetic_upi_data
+
       - name: Run Gate A (MLOps governance) + Gate B (RAG quality)
         run: pytest tests/ -v
 
@@ -97,6 +106,10 @@ jobs:
         run: |
           pip install -r scoring_service/requirements.txt
           pip install -r scoring_service/monitoring/requirements-evidently-ci.txt
+      - name: Regenerate synthetic training data
+        # Same reason as the test job -- drift_report.py's reference
+        # distribution comes from this gitignored, regenerable CSV.
+        run: python -m scoring_service.data.generate_synthetic_upi_data
       - name: Generate tested PSI+CUSUM drift reports (always works)
         run: python -m scoring_service.monitoring.drift_report
       - name: Generate literal Evidently dashboard (best-effort, unverified)
