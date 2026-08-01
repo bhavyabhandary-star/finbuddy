@@ -1,8 +1,9 @@
 # FinBuddy Demo Script
 
 ~5-6 minutes. Every command and number below is real -- pulled from actual runs in
-this repo, not scripted-sounding placeholders. Swap `localhost` URLs for the live
-HuggingFace Space URLs once deployed (see README's Deployment section).
+this repo, not scripted-sounding placeholders. URLs below point at the live deployed
+Spaces (verified working end to end); swap for `http://localhost:8001` /
+`http://localhost:8002` if demoing from a local `uvicorn` run instead.
 
 **Record a backup video of this exact run before the live demo**, in case wifi/API
 rate limits/Space cold-starts cause trouble live.
@@ -20,7 +21,7 @@ shipping."
 ## 2. Live scoring call (60s)
 
 ```bash
-curl -X POST http://localhost:8001/api/v1/score -H "Content-Type: application/json" -d '{
+curl -X POST https://bhavyabhandary-finbuddy-scoring.hf.space/api/v1/score -H "Content-Type: application/json" -d '{
   "avg_monthly_income": 21000,
   "income_regularity_score": 0.81,
   "tx_count_30d": 340,
@@ -47,7 +48,7 @@ Point out live, on screen:
 ## 3. Live RAG-grounded compliance answer (90s)
 
 ```bash
-curl -X POST http://localhost:8002/api/v1/whatsapp-coach/respond -H "Content-Type: application/json" -d '{
+curl -X POST https://bhavyabhandary-finbuddy-rag-coach.hf.space/api/v1/whatsapp-coach/respond -H "Content-Type: application/json" -d '{
   "user_query": "why do you need my UPI data",
   "f001_credit_score": 720,
   "f003_shap_top_3": ["income_regularity_score: +", "balance_dip_frequency: -"]
@@ -60,7 +61,7 @@ Point out:
 - Say explicitly: "if I ask something off-topic, it won't guess." Then run:
 
 ```bash
-curl -X POST http://localhost:8002/api/v1/whatsapp-coach/respond -H "Content-Type: application/json" -d '{
+curl -X POST https://bhavyabhandary-finbuddy-rag-coach.hf.space/api/v1/whatsapp-coach/respond -H "Content-Type: application/json" -d '{
   "user_query": "what is the weather like today"
 }'
 ```
@@ -71,7 +72,7 @@ Point out `escalate_to_human: true` firing correctly instead of a hallucinated a
 retention.
 
 ```bash
-curl -X POST http://localhost:8002/api/v1/whatsapp-coach/respond -H "Content-Type: application/json" -d '{
+curl -X POST https://bhavyabhandary-finbuddy-rag-coach.hf.space/api/v1/whatsapp-coach/respond -H "Content-Type: application/json" -d '{
   "user_query": "how long do you keep my KYC and financial records"
 }'
 ```

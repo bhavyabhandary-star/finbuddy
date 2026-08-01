@@ -126,12 +126,36 @@ pytest tests/ -v
 
 ## Deployment
 
-Target: HuggingFace Spaces (Docker SDK), one Space per service, deployed via
-`git subtree push` in CI once GitHub Secrets are configured -- see
-`.github/workflows/deploy.yml`'s header comment for the exact secrets required.
+**Live.** HuggingFace Spaces (Docker SDK), one Space per service, auto-deployed by
+`.github/workflows/deploy.yml` on every push to `master` (build-and-deploy only runs
+after Gate A + Gate B both pass). Each deploy builds a fresh, single-commit, git-LFS-tracked
+snapshot of the service directory and force-pushes it to the Space -- see the workflow
+file's comments for why (two real failed attempts: a plain `git subtree push` fails
+against a Space's auto-generated initial commit, and pushing this repo's full history
+fails HF's server-side check for binary files committed outside Git LFS).
 
-- Scoring service: _pending first deploy_
-- RAG coach service: _pending first deploy_
+- **Scoring service**: https://bhavyabhandary-finbuddy-scoring.hf.space (`/docs` for the
+  interactive API explorer) -- needs no secrets to run (no DB, no external API).
+- **RAG coach service**: https://bhavyabhandary-finbuddy-rag-coach.hf.space (`/docs`) --
+  needs `DATABASE_URL` and `GROQ_API_KEY` set directly in *this Space's own* Settings ->
+  Variables and secrets (GitHub Secrets only apply to the GitHub Actions workflow itself,
+  not to the running container on HuggingFace -- a distinct gap that produced a real
+  `Internal Server Error` on first deploy before both were added there too).
+
+Both verified live and working end to end, not just "container is up":
+```bash
+curl -X POST https://bhavyabhandary-finbuddy-scoring.hf.space/api/v1/score \
+  -H "Content-Type: application/json" -d '{"avg_monthly_income":21000,"income_regularity_score":0.81,"tx_count_30d":340,"merchant_diversity":11,"balance_dip_frequency":3,"b2b_ratio":0.12,"avg_transaction_size":95,"tenure_months":6,"geography":"rural"}'
+# -> real calibrated score, top-3 SHAP factors, fairness-mitigated decision, ~85ms
+
+curl -X POST https://bhavyabhandary-finbuddy-rag-coach.hf.space/api/v1/whatsapp-coach/respond \
+  -H "Content-Type: application/json" -d '{"user_query":"why do you need my UPI data"}'
+# -> real Groq-generated, corpus-grounded answer with cited sources
+
+curl -X POST https://bhavyabhandary-finbuddy-rag-coach.hf.space/api/v1/whatsapp-coach/respond \
+  -H "Content-Type: application/json" -d '{"user_query":"what is the weather like today"}'
+# -> escalate_to_human: true, correctly refuses to guess on an off-corpus question
+```
 
 ## Known open items before real production use
 
