@@ -9,6 +9,7 @@
 fastapi
 uvicorn[standard]
 pydantic
+python-multipart
 numpy
 pandas
 scikit-learn
@@ -18,5 +19,6 @@ joblib
 python-dotenv
 requests
 transformers
+sentence-transformers
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch

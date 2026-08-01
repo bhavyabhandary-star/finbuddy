@@ -1,0 +1,53 @@
+{
+  "model": "F-007/9 intent classifier (LogisticRegression on frozen LaBSE embeddings)",
+  "embedding_model": "sentence-transformers/LaBSE",
+  "n_train": 56,
+  "n_test": 24,
+  "test_accuracy": 1.0,
+  "per_class_report": {
+    "general_query": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 5.0
+    },
+    "limit_reduced": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 4.0
+    },
+    "loan_status": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 5.0
+    },
+    "repayment_help": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 5.0
+    },
+    "why_data_needed": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 5.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 24.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 24.0
+    }
+  },
+  "caveat": "Trained on ~80 authored synthetic examples across 5 intents in Hindi/Tamil/English -- no real WhatsApp conversation data exists for this project yet. Treat this as a working prototype of the approach, not a production-validated classifier; production would need real user queries and a much larger, language-balanced labeled set."
+}
