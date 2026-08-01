@@ -1,0 +1,19 @@
+{
+  "model": "Risk-Trend classifier (Logistic Regression, Ridge/L2)",
+  "roc_auc_target": 0.96,
+  "roc_auc_holdout": 0.9813,
+  "gate_pass": true,
+  "n_train": 8000,
+  "n_test": 2000,
+  "features": [
+    "delta_avg_monthly_income",
+    "delta_income_regularity_score",
+    "delta_tx_count_30d",
+    "delta_merchant_diversity",
+    "delta_balance_dip_frequency",
+    "delta_b2b_ratio",
+    "delta_avg_transaction_size",
+    "delta_tenure_months"
+  ],
+  "caveat": "Synthetic delta-window data; trend windows are generator-controlled, not observed real behavior."
+}

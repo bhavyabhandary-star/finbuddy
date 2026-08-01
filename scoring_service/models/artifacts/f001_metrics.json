@@ -1,0 +1,21 @@
+{
+  "model": "F-001 credit score (XGBoost, isotonic-calibrated)",
+  "auc_target": 0.82,
+  "auc_calibrated_holdout": 0.8824,
+  "auc_raw_booster_holdout": 0.88,
+  "brier_score_holdout": 0.1395,
+  "gate_pass": true,
+  "n_train": 8000,
+  "n_test": 2000,
+  "features": [
+    "avg_monthly_income",
+    "income_regularity_score",
+    "tx_count_30d",
+    "merchant_diversity",
+    "balance_dip_frequency",
+    "b2b_ratio",
+    "avg_transaction_size",
+    "tenure_months"
+  ],
+  "caveat": "Trained and evaluated entirely on synthetic data (no real Setu AA data exists yet). This AUC is a statement about the synthetic generator, not real gig-worker repayment behavior."
+}

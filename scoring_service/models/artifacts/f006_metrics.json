@@ -1,0 +1,10 @@
+{
+  "model": "F-006 anomaly detection (Isolation Forest, unsupervised)",
+  "contamination_param": 0.03,
+  "precision_vs_synthetic_ground_truth": 0.8448,
+  "recall_vs_synthetic_ground_truth": 0.8909,
+  "n_test": 2000,
+  "n_true_anomalies_in_test": 55,
+  "n_flagged_in_test": 58,
+  "caveat": "No governance-gate threshold is defined for F-006 in the spec (unlike F-001/Risk-Trend/F-012); these precision/recall numbers are reported for transparency against synthetic injected anomalies, not a pass/fail gate. Real deployment should expect lower precision against real, more diverse anomalous patterns."
+}
