@@ -1,0 +1,7 @@
+# Combined environment for local development and CI test job.
+# Installs both services' deps plus test tooling in one venv.
+-r scoring_service/requirements.txt
+-r rag_service/requirements.txt
+pytest
+pytest-asyncio
+httpx

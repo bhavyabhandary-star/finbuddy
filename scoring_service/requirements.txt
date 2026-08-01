@@ -1,0 +1,21 @@
+# F-001/F-003/F-006/F-012/Risk-Trend/F-007-9 scoring + coaching-signal service.
+#
+# NOTE: this environment's Application Control policy blocks llvmlite.dll,
+# which numba (a hard dependency of the `shap` package) needs to load. So
+# F-003 explainability uses XGBoost's own native Tree SHAP implementation
+# (Booster.predict(pred_contribs=True)) instead of the `shap` package --
+# same algorithm, no numba/llvmlite in the dependency chain. Do not add
+# `shap` here; it will fail to import on this machine.
+fastapi
+uvicorn[standard]
+pydantic
+numpy
+pandas
+scikit-learn
+xgboost
+fairlearn
+joblib
+python-dotenv
+transformers
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch

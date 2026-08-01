@@ -1,0 +1,71 @@
+{
+  "name": "FinBuddy Credit Assessment",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "finbuddy-check",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "fb-001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "finbuddy-prod"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst body = raw.body || raw;\nconst pid = ((body && body.persona_id) || 'rajesh').toLowerCase().trim();\n\nconst RAJESH = {\n  persona_id: 'rajesh', name: 'Rajesh Kumar',\n  role: 'Auto-rickshaw driver', city: 'Bengaluru',\n  requested_amount: 20000, approved_amount: 18000,\n  language: 'hindi', months_of_data: 6,\n  income_signals: { avg_monthly: 20000, regularity_score: 0.82 },\n  upi_patterns: { tx_count_30d: 400, merchant_diversity: 12,\n    balance_dip_freq: 2, b2b_ratio: 0.15, months: 6 },\n  confidence: { score: 78, data_quality: 'moderate',\n    primary_signal: 'UPI income regularity' },\n  shap_factors: [\n    { factor: 'UPI income regularity', impact: 0.82,\n      direction: 'positive',\n      plain_english: 'Rs 18-22K hits your account every month.',\n      action: 'Ensure income credits before 5th each month.' },\n    { factor: 'No credit history', impact: -0.45,\n      direction: 'negative',\n      plain_english: 'Banks have no track record for you.',\n      action: 'Take one FinBuddy micro-loan and repay on time.' },\n    { factor: 'Merchant diversity', impact: 0.38,\n      direction: 'positive',\n      plain_english: '12 merchants shows steady business.',\n      action: 'Keep transacting across Swiggy, petrol, groceries.' }\n  ]\n};\n\nconst MEENA = {\n  persona_id: 'meena', name: 'Meena Devi',\n  role: 'Kirana store owner', city: 'Chennai',\n  requested_amount: 35000, approved_amount: 32000,\n  language: 'english', months_of_data: 12,\n  income_signals: { avg_monthly: 37000, regularity_score: 0.91 },\n  upi_patterns: { tx_count_30d: 4500, merchant_diversity: 28,\n    balance_dip_freq: 0, b2b_ratio: 0.65, months: 12 },\n  confidence: { score: 91, data_quality: 'rich',\n    primary_signal: 'B2B receipt volume' },\n  shap_factors: [\n    { factor: 'Daily transaction volume', impact: 0.89,\n      direction: 'positive',\n      plain_english: '150 daily transactions prove shop thriving.',\n      action: 'Digitise payments via PhonePe or GPay.' },\n    { factor: 'GST filing gaps', impact: -0.38,\n      direction: 'negative',\n      plain_english: 'Two missing GST months reduce confidence.',\n      action: 'File GST monthly — zero-return months count.' },\n    { factor: 'B2B receipt ratio', impact: 0.55,\n      direction: 'positive',\n      plain_english: '65% business income is very strong.',\n      action: 'Request digital receipts from all suppliers.' }\n  ]\n};\n\nreturn [{ json: ({ rajesh: RAJESH, meena: MEENA })[pid] || RAJESH }];"
+      },
+      "id": "fb-002",
+      "name": "Mock Credit Scorer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pure-JS AI Response Generator — no external API, no billing.\n// Reads persona_id from Mock Credit Scorer output and returns\n// the full FinBuddy credit assessment JSON directly.\n\nconst profile = $input.first().json;\nconst pid = (profile.persona_id || 'rajesh').toLowerCase();\n\nconst RAJESH_RESPONSE = {\n  decision: 'conditional',\n  approved_amount: 18000,\n  confidence: {\n    score: 78,\n    data_quality: 'moderate',\n    primary_signal: 'UPI income regularity'\n  },\n  shap_factors: [\n    {\n      factor: 'UPI income regularity',\n      impact: 0.82,\n      direction: 'positive',\n      plain_english: 'Rs 18-22K hits your account every month.',\n      action: 'Ensure income credits before 5th each month.'\n    },\n    {\n      factor: 'No credit history',\n      impact: -0.45,\n      direction: 'negative',\n      plain_english: 'Banks have no track record for you.',\n      action: 'Take one FinBuddy micro-loan and repay on time.'\n    },\n    {\n      factor: 'Merchant diversity',\n      impact: 0.38,\n      direction: 'positive',\n      plain_english: '12 merchants shows steady business.',\n      action: 'Keep transacting across Swiggy, petrol, groceries.'\n    }\n  ],\n  roadmap: [\n    {\n      step: 1,\n      milestone: 'Complete 60 deliveries',\n      action: '2/day for 30 days on Swiggy Partner app.',\n      unlock_amount: 20000,\n      timeline_days: 30\n    },\n    {\n      step: 2,\n      milestone: 'Repay this loan on time',\n      action: 'Every repayment builds your credit footprint.',\n      unlock_amount: 25000,\n      timeline_days: 60\n    },\n    {\n      step: 3,\n      milestone: 'Link bank statement',\n      action: 'Share 3 months via Account Aggregator.',\n      unlock_amount: 30000,\n      timeline_days: 90\n    }\n  ],\n  vernacular_message: 'Rajesh bhai, aapko Rs 18,000 approved hai! Aapki mehnat rang laayi — UPI income har mahine regular aati hai. Aapka raasta khul raha hai.',\n  minimum_offer: 2000\n};\n\nconst MEENA_RESPONSE = {\n  decision: 'approved',\n  approved_amount: 32000,\n  confidence: {\n    score: 91,\n    data_quality: 'rich',\n    primary_signal: 'B2B receipt volume'\n  },\n  shap_factors: [\n    {\n      factor: 'Daily transaction volume',\n      impact: 0.89,\n      direction: 'positive',\n      plain_english: '150 daily transactions prove your shop is thriving.',\n      action: 'Digitise more payments via PhonePe or GPay.'\n    },\n    {\n      factor: 'GST filing gaps',\n      impact: -0.38,\n      direction: 'negative',\n      plain_english: 'Two missing GST months reduce lender confidence.',\n      action: 'File GST monthly — zero-return months still count.'\n    },\n    {\n      factor: 'B2B receipt ratio',\n      impact: 0.55,\n      direction: 'positive',\n      plain_english: '65% business income is very strong.',\n      action: 'Request digital receipts from all suppliers.'\n    }\n  ],\n  roadmap: [\n    {\n      step: 1,\n      milestone: 'File missing GST returns',\n      action: 'Complete both months at gst.gov.in.',\n      unlock_amount: 35000,\n      timeline_days: 15\n    },\n    {\n      step: 2,\n      milestone: 'Digitise supplier receipts',\n      action: 'Link all supplier payments to business UPI.',\n      unlock_amount: 40000,\n      timeline_days: 30\n    },\n    {\n      step: 3,\n      milestone: 'Link business bank account',\n      action: 'Share 3 months via Account Aggregator.',\n      unlock_amount: 50000,\n      timeline_days: 45\n    }\n  ],\n  vernacular_message: 'Meena ji, Rs 32,000 approved for your inventory! Your B2B volume and daily transactions show a thriving business. File those two GST returns and your next limit goes to Rs 40,000.',\n  minimum_offer: 2000\n};\n\nconst result = ({ rajesh: RAJESH_RESPONSE, meena: MEENA_RESPONSE })[pid] || RAJESH_RESPONSE;\nreturn [{ json: result }];"
+      },
+      "id": "fb-003",
+      "name": "AI Response Generator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin",  "value": "*" },
+              { "name": "Access-Control-Allow-Headers", "value": "Content-Type" },
+              { "name": "Content-Type",                 "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "id": "fb-004",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [960, 300]
+    }
+  ],
+  "connections": {
+    "Webhook":            { "main": [[{ "node": "Mock Credit Scorer",   "type": "main", "index": 0 }]] },
+    "Mock Credit Scorer": { "main": [[{ "node": "AI Response Generator","type": "main", "index": 0 }]] },
+    "AI Response Generator": { "main": [[{ "node": "Respond to Webhook","type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1", "saveManualExecutions": true },
+  "versionId": "finbuddy-v5-noapi",
+  "meta": { "templateCredsSetupCompleted": true },
+  "id": "finbuddy-v5",
+  "tags": [{ "id": "finbuddy", "name": "finbuddy" }]
+}

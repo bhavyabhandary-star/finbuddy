@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+asyncpg
+pgvector
+sentence-transformers
+groq
+python-dotenv

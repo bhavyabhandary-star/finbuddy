@@ -1,0 +1,285 @@
+Build a complete, fully interactive single-page web app called FinBuddy. It is an AI-powered credit assessment tool for micro-entrepreneurs and gig workers in India. All state is managed in JavaScript — no page reloads. When the user taps the CTA button, the app makes a POST request to a webhook that returns a JSON credit assessment directly. The response is rendered on Screen 2.
+
+================================================================
+DESIGN SYSTEM
+================================================================
+
+Font: Inter — import from Google Fonts
+CSS custom properties:
+  --brand:   #1A56DB
+  --success: #059669
+  --warning: #D97706
+  --danger:  #DC2626
+  --bg:      #F8FAFC
+  --surface: #FFFFFF
+  --text:    #111827
+  --muted:   #6B7280
+  --border:  #E5E7EB
+
+Layout: max-width 420px, centered, padding 0 16px 32px
+Body: background var(--bg), font-family Inter, color var(--text)
+Cards: background white, border-radius 16px,
+       box-shadow 0 1px 4px rgba(0,0,0,0.08), padding 16px
+No gradients. Flat design only.
+
+
+================================================================
+SCREEN 1 — HOME  (visible on load, Screen 2 hidden)
+================================================================
+
+─── TOP BAR ────────────────────────────────────────────────────
+White, border-bottom 1px solid var(--border), padding 14px 16px,
+position sticky, top 0, z-index 10
+Left:
+  "FinBuddy" — var(--brand), 20px, font-weight 700
+  "Explainable credit for India" — var(--muted), 11px, below
+Right: "AI Powered" pill — background var(--brand), color white,
+  border-radius 20px, padding 3px 10px, 11px, font-weight 600
+
+
+─── PERSONA SWITCHER ────────────────────────────────────────────
+Label "Choose a profile" — uppercase, 11px, font-weight 700,
+letter-spacing 0.8px, color var(--muted), margin 20px 0 10px
+
+Three equal flex cards, gap 8px:
+
+  Card 1 — Rajesh
+    🛺 36px centered  |  "Rajesh" bold 13px  |  "Gig Worker" muted 10px  |  "Bengaluru" muted 10px
+
+  Card 2 — Meena
+    🛒 36px centered  |  "Meena" bold 13px   |  "Kirana Owner" muted 10px |  "Chennai" muted 10px
+
+  Card 3 — Custom
+    👤 36px centered  |  "Custom" bold 13px
+    <input placeholder="Your role" — borderless, underline only, 10px, centered>
+    <input placeholder="Your city" — borderless, underline only, 10px, centered>
+
+ACTIVE card: border 2px solid var(--brand), background #EBF5FF, transform scale(1.04)
+INACTIVE: border 2px solid var(--border), background white
+Default active: Rajesh. Clicking a card activates it, updates detail card + language pill.
+
+
+─── PERSONA DETAIL CARD ────────────────────────────────────────
+White card, margin-top 12px, flex row
+Left: 52px emoji  |  Right: info column (gap 14px)
+
+Rajesh: Name "Rajesh Kumar" | Role "Auto-rickshaw driver" | City "Bengaluru, Karnataka"
+  Monthly Income → Rs 20,000 (var(--success), bold)
+  Loan Request   → Rs 20,000 (var(--brand), bold)
+  UPI / Month    → 400 transactions
+
+Meena: Name "Meena Devi" | Role "Kirana store owner" | City "Chennai, Tamil Nadu"
+  Monthly Income → Rs 37,000 (var(--success), bold)
+  Loan Request   → Rs 35,000 (var(--brand), bold)
+  UPI / Month    → 4,500 transactions
+
+Custom: editable fields for name, income, loan amount
+
+Row labels: var(--muted) 12px | values: 13px font-weight 600
+
+
+─── LANGUAGE PILLS ─────────────────────────────────────────────
+Label "Assessment language" (same uppercase muted style)
+Pills: Hindi | English | Tamil | Telugu (flex row, gap 8px)
+ACTIVE: background var(--brand), color white, border-color var(--brand)
+INACTIVE: border 1.5px solid var(--border), background white, 13px, font-weight 500
+Default: Hindi for Rajesh, English for Meena, English for Custom
+
+
+─── VOICE BUTTON ───────────────────────────────────────────────
+Center-aligned, margin-top 24px
+
+Circle: 72px, border-radius 50%, background var(--brand), border none, cursor pointer
+Microphone SVG inside (white, 28px):
+  <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="28" height="28">
+    <rect x="9" y="2" width="6" height="12" rx="3"/>
+    <path d="M5 10a7 7 0 0014 0"/>
+    <line x1="12" y1="19" x2="12" y2="22"/>
+    <line x1="8"  y1="22" x2="16" y2="22"/>
+  </svg>
+
+Rotating phrase (13px, var(--muted), italic, margin-top 10px, text-align center):
+  Cycle every 2800ms through language-matched phrases:
+    Hindi:   ["Mujhe loan chahiye", "Meri income kitni hai?", "Aage kya karna hai?"]
+    English: ["Check my credit", "How much can I borrow?", "What's my next step?"]
+    Tamil:   ["Loan vendum", "En varumanam ethanai?", "Mela enna seiya vendum?"]
+    Telugu:  ["Loan kavali", "Naa aadayam ela undi?", "Tarvata emi cheyyali?"]
+
+On click:
+  Scale pulse: 1 → 1.18 → 1 over 600ms
+  3 rings expand + fade from button center (staggered 200ms CSS keyframes)
+  Phrase → "Listening..." in var(--brand)
+  After 2000ms: revert to phrase cycling
+
+
+─── CTA BUTTON ─────────────────────────────────────────────────
+Full-width, margin-top 20px
+"Run AI Credit Assessment" — background var(--brand), color white,
+border none, border-radius 12px, padding 16px, 16px, font-weight 700, width 100%
+
+Caption: "Powered by FinBuddy AI · UPI data signals" — var(--muted), 11px, centered, mt 6px
+
+On click:
+  Disable button. Show spinner + "Analysing..."
+  POST to WEBHOOK_URL (see API section)
+  On success → renderResults(data), hide Screen 1, show Screen 2
+  On error → load DEMO_DATA, show toast "Using demo data — webhook unreachable." 4s
+
+
+================================================================
+SCREEN 2 — RESULTS  (hidden on load)
+================================================================
+
+Entrance: translateX(100%) → translateX(0), 280ms ease
+
+─── TOP BAR ────────────────────────────────────────────────────
+Same style as Screen 1.
+Left: ← (var(--brand), 22px, cursor pointer) — click slides back to Screen 1
+Center: "Credit Assessment" bold 16px
+Right: persona name var(--muted) 12px
+
+
+─── DECISION BADGE ─────────────────────────────────────────────
+Centered, margin-top 20px, inline-block pill, border-radius 24px, padding 11px 36px
+  "approved"    → bg #D1FAE5, color #065F46, text "✓ APPROVED"
+  "conditional" → bg #FEF3C7, color #92400E, text "◑ CONDITIONAL"
+  "declined"    → bg #FEE2E2, color #991B1B, text "✗ REVIEW NEEDED"
+17px, font-weight 800, letter-spacing 1px
+
+
+─── APPROVED AMOUNT ────────────────────────────────────────────
+Text-align center, margin-top 14px
+Amount: 46px, font-weight 800
+  approved → var(--success) | conditional → var(--warning) | declined → var(--danger)
+Count-up: 0 → final via requestAnimationFrame over 900ms
+  Format: "Rs " + value.toLocaleString('en-IN')
+Sub: "of Rs X requested" — var(--muted), 14px
+
+
+─── CONFIDENCE CHIP ────────────────────────────────────────────
+Centered pill, mt 10px, bg #F3F4F6, border-radius 20px, padding 6px 14px, 12px
+"[score]% Confidence · [primary_signal]" (score bold)
+Data quality dot + label right:
+  rich → #059669 dot + "Rich data" | moderate → #D97706 dot | thin → #DC2626 dot
+
+
+─── VERNACULAR MESSAGE CARD ────────────────────────────────────
+bg #EBF5FF, border-left 4px solid var(--brand), border-radius 12px,
+padding 16px, margin-top 16px
+Opening " — var(--brand), 32px, line-height 0.6, display block, mb 6px
+Message: font-weight 600, font-style italic, 15px, color #1e3a5f, line-height 1.7
+
+
+─── SHAP FACTORS ───────────────────────────────────────────────
+Label "Why this decision?" (uppercase muted, margin-top 22px)
+
+For each shap_factors item — white card, mb 10px:
+
+  Row 1: factor name (bold 14px) | impact badge right-aligned
+    positive → "+X.XX" bg #D1FAE5 color #065F46
+    negative → "−X.XX" bg #FEE2E2 color #991B1B
+    (border-radius 8px, padding 2px 8px, 12px)
+
+  Progress bar: full width, 8px tall, border-radius 4px, bg #F3F4F6, mt 10px
+    Fill: width = Math.min(Math.abs(impact)/1.0*100, 100)%
+    Color: var(--success) positive | var(--danger) negative
+    Animate width 0 → final, 700ms ease-out
+    Stagger: item[0] delay 100ms | item[1] 300ms | item[2] 500ms
+
+  plain_english: 13px, #374151, mt 2px
+  "⚡ " + action: var(--brand), 12px, font-weight 600, mt 6px
+
+
+─── ROADMAP ────────────────────────────────────────────────────
+Label "Your path to more credit" (same style, margin-top 22px)
+
+For each roadmap step (flex col, gap 0):
+  Circle (34px, border-radius 50%, bg var(--brand), color white,
+    font-weight 700, 14px, flex-shrink 0) + content right (gap 14px)
+  Dashed connector between circles: 2px wide, 22px tall, color var(--border), ml 16px
+
+  Content:
+    milestone: font-weight 700, 14px
+    action: 13px, #374151, mt 2px
+    "📅 X days · 💰 Unlocks Rs X,XXX" — var(--muted)/var(--success), 12px, mt 5px
+
+
+─── MINIMUM OFFER BANNER ───────────────────────────────────────
+Show if minimum_offer >= 2000:
+bg #FFFBEB, border 1px solid #FDE68A, border-radius 12px, padding 12px 16px, mt 12px
+"🛡️ Guaranteed starter: Rs 2,000 available today"
+13px, color #92400E, font-weight 500
+
+
+─── RESET BUTTON ───────────────────────────────────────────────
+Full-width outlined, mt 24px
+"Start New Assessment" — border 2px solid var(--brand), color var(--brand),
+transparent bg, border-radius 12px, padding 14px, 15px, font-weight 600
+On click: slide Screen 2 right, restore Screen 1 + CTA button
+
+
+================================================================
+API INTEGRATION
+================================================================
+
+const WEBHOOK_URL = "WEBHOOK_URL";
+
+// The n8n workflow returns FinBuddy JSON directly — no unwrapping needed.
+function runAssessment() {
+  const payload = {
+    persona_id: selectedPersona,   // "rajesh" | "meena" | "custom"
+    language:   selectedLanguage   // "hindi" | "english" | "tamil" | "telugu"
+  };
+
+  fetch(WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+  .then(data => renderResults(data))
+  .catch(() => {
+    renderResults(DEMO_DATA);
+    showToast("Webhook unreachable — showing demo data.", "warning");
+  });
+}
+
+// renderResults reads these fields directly from the response:
+// data.decision, data.approved_amount, data.confidence,
+// data.shap_factors, data.roadmap, data.vernacular_message, data.minimum_offer
+
+
+================================================================
+FALLBACK DEMO DATA
+================================================================
+
+const DEMO_DATA = {
+  decision: "conditional",
+  approved_amount: 18000,
+  confidence: { score: 78, data_quality: "moderate",
+                primary_signal: "UPI income regularity" },
+  shap_factors: [
+    { factor: "UPI income regularity", impact: 0.82, direction: "positive",
+      plain_english: "Rs 18-22K hits your account every month.",
+      action: "Ensure income credits before 5th each month." },
+    { factor: "No credit history", impact: -0.45, direction: "negative",
+      plain_english: "Banks have no track record for you.",
+      action: "Take one FinBuddy micro-loan and repay on time." },
+    { factor: "Merchant diversity", impact: 0.38, direction: "positive",
+      plain_english: "12 merchants shows steady business.",
+      action: "Keep transacting across Swiggy, petrol, groceries." }
+  ],
+  roadmap: [
+    { step: 1, milestone: "Complete 60 deliveries",
+      action: "2/day for 30 days on Swiggy Partner app.",
+      unlock_amount: 20000, timeline_days: 30 },
+    { step: 2, milestone: "Repay this loan on time",
+      action: "Every repayment builds your credit footprint.",
+      unlock_amount: 25000, timeline_days: 60 },
+    { step: 3, milestone: "Link bank statement",
+      action: "Share 3 months via Account Aggregator.",
+      unlock_amount: 30000, timeline_days: 90 }
+  ],
+  vernacular_message: "Rajesh bhai, aapko Rs 18,000 approved hai! Aapki mehnat rang laayi — UPI income har mahine regular aati hai. Aapka raasta khul raha hai.",
+  minimum_offer: 2000
+};
