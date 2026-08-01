@@ -77,7 +77,14 @@ jobs:
           HF_USERNAME: ${{ secrets.HF_USERNAME }}
         run: |
           git remote add scoring-space "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/finbuddy-scoring" || true
-          git subtree push --prefix=scoring_service scoring-space main
+          # Plain `git subtree push` fails here: a freshly-created HF Space
+          # auto-generates an initial commit (template README/placeholder),
+          # so its `main` has history we don't have locally -- a real fetch
+          # would need a merge, but there's nothing worth preserving in an
+          # auto-generated placeholder. Split + force-push overwrites it
+          # with our actual code, verified as the correct fix after the
+          # plain push failed with "[rejected] ... (fetch first)" in CI.
+          git push scoring-space $(git subtree split --prefix=scoring_service HEAD):refs/heads/main --force
 
       - name: Push rag_service to its HuggingFace Space
         env:
@@ -85,7 +92,7 @@ jobs:
           HF_USERNAME: ${{ secrets.HF_USERNAME }}
         run: |
           git remote add rag-space "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/finbuddy-rag-coach" || true
-          git subtree push --prefix=rag_service rag-space main
+          git push rag-space $(git subtree split --prefix=rag_service HEAD):refs/heads/main --force
 
   drift-report:
     # Best-effort only: NOT verified from the dev session that wrote this
