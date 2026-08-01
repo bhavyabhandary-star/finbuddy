@@ -63,36 +63,50 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # full history required for git subtree push
 
-      - name: Configure git identity for subtree push
+      # NOT using `git subtree push` (tried, twice) -- two real failures in a
+      # row: (1) a freshly-created HF Space auto-generates an initial commit,
+      # so a plain push is rejected as non-fast-forward; (2) subtree push
+      # carries this repo's FULL history, where scoring_service's .joblib
+      # model artifacts were committed as plain git blobs -- HF's server
+      # rejects that outright ("push was rejected because it contains binary
+      # files ... use Git LFS"). Building a fresh, single-commit, properly
+      # LFS-tracked snapshot of each service directory sidesteps both: no
+      # inherited history to conflict with, and binaries go through LFS from
+      # the very first commit of this snapshot repo.
+      - name: Deploy scoring_service to its HuggingFace Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
         run: |
+          rm -rf /tmp/deploy-scoring && mkdir -p /tmp/deploy-scoring
+          cp -r scoring_service/. /tmp/deploy-scoring/
+          find /tmp/deploy-scoring -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+          cd /tmp/deploy-scoring
+          git init -q -b main
           git config user.email "ci@finbuddy.local"
           git config user.name "FinBuddy CI"
+          git lfs install --local
+          git lfs track "*.joblib"
+          git add -A
+          git commit -q -m "Deploy scoring_service from finbuddy@${GITHUB_SHA}"
+          git push "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/finbuddy-scoring" HEAD:main --force
 
-      - name: Push scoring_service to its HuggingFace Space
+      - name: Deploy rag_service to its HuggingFace Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_USERNAME: ${{ secrets.HF_USERNAME }}
         run: |
-          git remote add scoring-space "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/finbuddy-scoring" || true
-          # Plain `git subtree push` fails here: a freshly-created HF Space
-          # auto-generates an initial commit (template README/placeholder),
-          # so its `main` has history we don't have locally -- a real fetch
-          # would need a merge, but there's nothing worth preserving in an
-          # auto-generated placeholder. Split + force-push overwrites it
-          # with our actual code, verified as the correct fix after the
-          # plain push failed with "[rejected] ... (fetch first)" in CI.
-          git push scoring-space $(git subtree split --prefix=scoring_service HEAD):refs/heads/main --force
-
-      - name: Push rag_service to its HuggingFace Space
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_USERNAME: ${{ secrets.HF_USERNAME }}
-        run: |
-          git remote add rag-space "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/finbuddy-rag-coach" || true
-          git push rag-space $(git subtree split --prefix=rag_service HEAD):refs/heads/main --force
+          rm -rf /tmp/deploy-rag && mkdir -p /tmp/deploy-rag
+          cp -r rag_service/. /tmp/deploy-rag/
+          find /tmp/deploy-rag -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+          cd /tmp/deploy-rag
+          git init -q -b main
+          git config user.email "ci@finbuddy.local"
+          git config user.name "FinBuddy CI"
+          git add -A
+          git commit -q -m "Deploy rag_service from finbuddy@${GITHUB_SHA}"
+          git push "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/finbuddy-rag-coach" HEAD:main --force
 
   drift-report:
     # Best-effort only: NOT verified from the dev session that wrote this
