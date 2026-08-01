@@ -1,0 +1,7 @@
+# Deliberately separate from scoring_service/requirements.txt -- evidently
+# pulls in pyarrow, which broke `import pandas` entirely on the dev machine
+# used for this project (Windows Application Control policy blocking a
+# pyarrow DLL). Install this ONLY on a machine/CI runner without that
+# restriction (e.g. GitHub Actions ubuntu-latest). See drift_report.py and
+# drift_report_evidently_ci.py docstrings for the full story.
+evidently

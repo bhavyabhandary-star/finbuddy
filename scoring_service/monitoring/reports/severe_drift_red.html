@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>FinBuddy Drift Report -- severe_drift_red</title>
+<style>body{font-family:sans-serif;max-width:800px;margin:2rem auto;}
+table{border-collapse:collapse;width:100%;}td,th{border:1px solid #ccc;padding:6px 10px;text-align:left;}
+.status{font-size:1.5rem;font-weight:bold;color:#cf222e;}</style></head><body>
+<h1>FinBuddy Drift Report</h1>
+<p><b>Scenario:</b> severe_drift_red &nbsp; <b>Generated:</b> 2026-08-01T21:01:10.251571+00:00</p>
+<p class="status">Status: RED</p>
+<p><b>Action:</b> Auto-queue retraining on fresh Setu AA snapshots (real data, once available).</p>
+<p><b>Reference rows:</b> 10000 &nbsp; <b>Current rows:</b> 1500</p>
+<h2>Per-feature PSI</h2>
+<table><tr><th>Feature</th><th>PSI</th><th>Flag</th></tr><tr><td>avg_monthly_income</td><td>0.736</td><td>AMBER/RED</td></tr>
+<tr><td>b2b_ratio</td><td>0.0103</td><td>green</td></tr>
+<tr><td>tx_count_30d</td><td>0.0083</td><td>green</td></tr>
+<tr><td>merchant_diversity</td><td>0.0065</td><td>green</td></tr>
+<tr><td>income_regularity_score</td><td>0.0049</td><td>green</td></tr>
+<tr><td>avg_transaction_size</td><td>0.0039</td><td>green</td></tr>
+<tr><td>tenure_months</td><td>0.0038</td><td>green</td></tr>
+<tr><td>balance_dip_frequency</td><td>0.0011</td><td>green</td></tr></table>
+<h2>CUSUM (on avg_monthly_income, highest-PSI feature)</h2>
+<p>Alarm fired: True (at batch 0)</p>
+<p style="color:#666;font-size:0.9em">PSI thresholds: GREEN &lt; 0.1, AMBER 0.1-0.2, RED &gt; 0.2.
+Simulated data -- see module docstring for why (no real production traffic exists yet).</p>
+</body></html>
