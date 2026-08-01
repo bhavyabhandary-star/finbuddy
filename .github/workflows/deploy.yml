@@ -1,0 +1,107 @@
+# FinBuddy CI/CD: Gate A (MLOps governance) + Gate B (RAG quality) must both
+# pass before any deploy happens -- build-and-deploy declares `needs: test`
+# so a failing test blocks deployment outright, not just a logged warning.
+#
+# REQUIRED GitHub Secrets before this workflow can actually deploy (test job
+# runs fine without them for the parts that don't need external services --
+# see the test job's own notes):
+#   DATABASE_URL   -- Neon/Supabase Postgres connection string (pgvector),
+#                      with knowledge_corpus already populated
+#   GROQ_API_KEY   -- console.groq.com free API key
+#   HF_TOKEN       -- HuggingFace access token with write access, for pushing
+#                      to the two Spaces below
+#   HF_USERNAME    -- your HuggingFace username (Spaces are pushed to
+#                      huggingface.co/spaces/<HF_USERNAME>/finbuddy-scoring
+#                      and .../finbuddy-rag-coach -- create both Spaces
+#                      first, Docker SDK, before this workflow can push to
+#                      them)
+#
+# Until those secrets exist, `test` still runs (Gate A always works; Gate
+# B's real-Groq tests skip cleanly without GROQ_API_KEY/DATABASE_URL, same
+# as running locally) but `build-and-deploy` will fail at the push step.
+
+name: FinBuddy CI/CD
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run Gate A (MLOps governance) + Gate B (RAG quality)
+        run: pytest tests/ -v
+
+  build-and-deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history required for git subtree push
+
+      - name: Configure git identity for subtree push
+        run: |
+          git config user.email "ci@finbuddy.local"
+          git config user.name "FinBuddy CI"
+
+      - name: Push scoring_service to its HuggingFace Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
+        run: |
+          git remote add scoring-space "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/finbuddy-scoring" || true
+          git subtree push --prefix=scoring_service scoring-space main
+
+      - name: Push rag_service to its HuggingFace Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
+        run: |
+          git remote add rag-space "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/finbuddy-rag-coach" || true
+          git subtree push --prefix=rag_service rag-space main
+
+  drift-report:
+    # Best-effort only: NOT verified from the dev session that wrote this
+    # (evidently broke pandas locally via a blocked DLL, so this could only
+    # be written against evidently's documented API, never actually run).
+    # continue-on-error so a failure here never blocks test or deploy --
+    # the pure-numpy PSI+CUSUM report (drift_report.py) is the tested,
+    # trusted one; this is the literal-Evidently-package bonus artifact.
+    needs: test
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install scoring_service deps + evidently
+        run: |
+          pip install -r scoring_service/requirements.txt
+          pip install -r scoring_service/monitoring/requirements-evidently-ci.txt
+      - name: Generate tested PSI+CUSUM drift reports (always works)
+        run: python -m scoring_service.monitoring.drift_report
+      - name: Generate literal Evidently dashboard (best-effort, unverified)
+        run: python -m scoring_service.monitoring.drift_report_evidently_ci
+      - uses: actions/upload-artifact@v4
+        with:
+          name: drift-reports
+          path: scoring_service/monitoring/reports/

@@ -1,0 +1,56 @@
+{
+  "scenario": "severe_drift_red",
+  "generated_at": "2026-08-01T21:01:10.251571+00:00",
+  "n_reference": 10000,
+  "n_current": 1500,
+  "per_feature_psi": {
+    "avg_monthly_income": 0.736,
+    "income_regularity_score": 0.0049,
+    "tx_count_30d": 0.0083,
+    "merchant_diversity": 0.0065,
+    "balance_dip_frequency": 0.0011,
+    "b2b_ratio": 0.0103,
+    "avg_transaction_size": 0.0039,
+    "tenure_months": 0.0038
+  },
+  "max_psi_feature": "avg_monthly_income",
+  "max_psi": 0.736,
+  "cusum": {
+    "alarm": true,
+    "alarm_at_batch": 0
+  },
+  "cusum_trace": [
+    {
+      "batch": 0,
+      "z_mean": -12.384,
+      "s_hi": 0.0,
+      "s_lo": -11.884
+    },
+    {
+      "batch": 1,
+      "z_mean": -11.9639,
+      "s_hi": 0.0,
+      "s_lo": -23.3479
+    },
+    {
+      "batch": 2,
+      "z_mean": -11.999,
+      "s_hi": 0.0,
+      "s_lo": -34.847
+    },
+    {
+      "batch": 3,
+      "z_mean": -12.2701,
+      "s_hi": 0.0,
+      "s_lo": -46.617
+    },
+    {
+      "batch": 4,
+      "z_mean": -12.4399,
+      "s_hi": 0.0,
+      "s_lo": -58.5569
+    }
+  ],
+  "status": "RED",
+  "action": "Auto-queue retraining on fresh Setu AA snapshots (real data, once available)."
+}

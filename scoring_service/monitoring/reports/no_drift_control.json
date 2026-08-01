@@ -1,0 +1,56 @@
+{
+  "scenario": "no_drift_control",
+  "generated_at": "2026-08-01T21:01:10.240724+00:00",
+  "n_reference": 10000,
+  "n_current": 1500,
+  "per_feature_psi": {
+    "avg_monthly_income": 0.0056,
+    "income_regularity_score": 0.0073,
+    "tx_count_30d": 0.0046,
+    "merchant_diversity": 0.0039,
+    "balance_dip_frequency": 0.002,
+    "b2b_ratio": 0.0043,
+    "avg_transaction_size": 0.0061,
+    "tenure_months": 0.0052
+  },
+  "max_psi_feature": "income_regularity_score",
+  "max_psi": 0.0073,
+  "cusum": {
+    "alarm": false,
+    "alarm_at_batch": null
+  },
+  "cusum_trace": [
+    {
+      "batch": 0,
+      "z_mean": 0.2141,
+      "s_hi": 0.0,
+      "s_lo": 0.0
+    },
+    {
+      "batch": 1,
+      "z_mean": -0.4082,
+      "s_hi": 0.0,
+      "s_lo": 0.0
+    },
+    {
+      "batch": 2,
+      "z_mean": -0.357,
+      "s_hi": 0.0,
+      "s_lo": 0.0
+    },
+    {
+      "batch": 3,
+      "z_mean": 0.4641,
+      "s_hi": 0.0,
+      "s_lo": 0.0
+    },
+    {
+      "batch": 4,
+      "z_mean": 0.4505,
+      "s_hi": 0.0,
+      "s_lo": 0.0
+    }
+  ],
+  "status": "GREEN",
+  "action": "Passive weekly monitoring -- no action."
+}
