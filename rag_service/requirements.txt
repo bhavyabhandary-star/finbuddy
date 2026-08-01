@@ -5,3 +5,5 @@ pgvector
 sentence-transformers
 groq
 python-dotenv
+python-frontmatter
+pyyaml

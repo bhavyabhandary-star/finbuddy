@@ -38,13 +38,19 @@ CREATE TABLE IF NOT EXISTS knowledge_corpus (
 
 CREATE_PGCRYPTO = "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 
-# ivfflat index for cosine-distance search once the corpus has enough rows;
-# harmless (and near-instant) on a small seed corpus too.
-CREATE_INDEX = """
-CREATE INDEX IF NOT EXISTS knowledge_corpus_embedding_idx
-ON knowledge_corpus USING ivfflat (embedding vector_cosine_ops)
-WITH (lists = 100);
-"""
+# NO ivfflat index at this corpus size. An earlier version of this file
+# created one with lists=100 and it silently broke retrieval: IVFFlat is an
+# APPROXIMATE nearest-neighbor index, and with only ~46 rows spread across
+# 100 clusters, most clusters are empty or hold a single row -- probing the
+# default 1 cluster missed the actual nearest neighbors entirely (verified:
+# queries returned the wrong top document, and LIMIT 3 sometimes returned 0
+# rows). Without any index, pgvector does an exact brute-force scan, which
+# is both correct and fast at corpus sizes up to at least tens of thousands
+# of rows. Add an ivfflat/hnsw index back only once the corpus is large
+# enough for pgvector's own sizing guidance (roughly, lists ~= rows/1000 for
+# ivfflat) to produce a sane cluster count -- and re-verify retrieval
+# quality with real queries after doing so, the same way this was caught.
+DROP_STALE_INDEX = "DROP INDEX IF EXISTS knowledge_corpus_embedding_idx;"
 
 CREATE_METADATA_GIN_INDEX = """
 CREATE INDEX IF NOT EXISTS knowledge_corpus_metadata_idx
@@ -58,7 +64,7 @@ async def bootstrap() -> None:
         await conn.execute(CREATE_PGCRYPTO)
         await conn.execute(CREATE_EXTENSION)
         await conn.execute(CREATE_TABLE)
-        await conn.execute(CREATE_INDEX)
+        await conn.execute(DROP_STALE_INDEX)
         await conn.execute(CREATE_METADATA_GIN_INDEX)
         count = await conn.fetchval("SELECT count(*) FROM knowledge_corpus;")
         print(f"knowledge_corpus ready (dim={EMBEDDING_DIM}), {count} rows present.")
