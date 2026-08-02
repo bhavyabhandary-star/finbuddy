@@ -51,6 +51,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Registered after CORSMiddleware, not before the module-level constants/
+# helpers below (SYSTEM_PROMPT_TEMPLATE, HUMAN_ESCALATION_MESSAGE,
+# _build_context_block) -- whatsapp_webhook.py imports those from this
+# module, so this import must come after they're defined. See
+# whatsapp_webhook.py for what the real Twilio integration does and
+# doesn't handle.
+
 SYSTEM_PROMPT_TEMPLATE = """You are the FinBuddy WhatsApp Coach, helping gig-economy borrowers understand \
 their credit score, why decisions were made, and FinBuddy's data/policy practices.
 
@@ -167,3 +174,13 @@ async def whatsapp_coach_respond(request: CoachRequest) -> CoachResponse:
         sources=_to_source_metadata(retrieval["results"]),
         latency_ms=round(latency_ms, 2),
     )
+
+
+# Imported down here, not at the top of the file: whatsapp_webhook.py pulls
+# SYSTEM_PROMPT_TEMPLATE / HUMAN_ESCALATION_MESSAGE / _build_context_block
+# from this module, so this module must finish defining them first --
+# importing at the top would be a real circular-import failure, not just
+# style.
+from rag_service.whatsapp_webhook import router as twilio_whatsapp_router  # noqa: E402
+
+app.include_router(twilio_whatsapp_router)
