@@ -30,6 +30,16 @@ from rag_service.main import app
 client = TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def _no_token_by_default(monkeypatch):
+    """Tests below assume TWILIO_AUTH_TOKEN is unset unless a test explicitly
+    sets it -- don't rely on the real ambient environment/.env actually being
+    empty, since rag_service/.env now has a real token for local testing
+    against the live sandbox (llm_client.py's load_dotenv() picks it up).
+    Each test gets a fresh, isolated "" baseline regardless of that."""
+    monkeypatch.setattr("rag_service.whatsapp_webhook.TWILIO_AUTH_TOKEN", "")
+
+
 def test_empty_body_asks_to_retype():
     resp = client.post(
         "/webhook/twilio/whatsapp",

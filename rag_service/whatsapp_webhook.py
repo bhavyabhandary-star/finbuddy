@@ -40,14 +40,15 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from twilio.request_validator import RequestValidator
 from twilio.twiml.messaging_response import MessagingResponse
 
-from rag_service import llm_client
-from rag_service.main import HUMAN_ESCALATION_MESSAGE, SYSTEM_PROMPT_TEMPLATE, _build_context_block
+from rag_service import audit_log, llm_client
+from rag_service.main import HUMAN_ESCALATION_MESSAGE, SYSTEM_PROMPT_TEMPLATE, _build_context_block, _to_source_metadata
 from rag_service.retriever import search_corpus
 
 logger = logging.getLogger(__name__)
@@ -105,9 +106,13 @@ async def twilio_whatsapp_webhook(request: Request) -> Response:
         twiml.message("I didn't catch a question there -- could you type it again?")
         return Response(content=str(twiml), media_type="application/xml")
 
+    start = time.perf_counter()
     retrieval = await search_corpus(body, top_k=3)
+    sources = [s.model_dump() for s in _to_source_metadata(retrieval["results"])]
 
     if retrieval["low_confidence"]:
+        latency_ms = (time.perf_counter() - start) * 1000
+        audit_log.append_record("whatsapp", body, HUMAN_ESCALATION_MESSAGE, True, True, sources, latency_ms)
         twiml.message(HUMAN_ESCALATION_MESSAGE)
         return Response(content=str(twiml), media_type="application/xml")
 
@@ -124,5 +129,7 @@ async def twilio_whatsapp_webhook(request: Request) -> Response:
         twiml.message("Sorry, I'm having trouble generating an answer right now -- please try again in a moment.")
         return Response(content=str(twiml), media_type="application/xml")
 
+    latency_ms = (time.perf_counter() - start) * 1000
+    audit_log.append_record("whatsapp", body, answer, False, False, sources, latency_ms)
     twiml.message(answer)
     return Response(content=str(twiml), media_type="application/xml")

@@ -33,7 +33,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from rag_service import llm_client
+from rag_service import audit_log, llm_client
 from rag_service.retriever import search_corpus
 
 app = FastAPI(
@@ -147,11 +147,16 @@ async def whatsapp_coach_respond(request: CoachRequest) -> CoachResponse:
 
     if retrieval["low_confidence"]:
         latency_ms = (time.perf_counter() - start) * 1000
+        sources = _to_source_metadata(retrieval["results"])
+        audit_log.append_record(
+            "http_api", query_text, HUMAN_ESCALATION_MESSAGE, True, True,
+            [s.model_dump() for s in sources], latency_ms,
+        )
         return CoachResponse(
             answer=HUMAN_ESCALATION_MESSAGE,
             escalate_to_human=True,
             low_confidence=True,
-            sources=_to_source_metadata(retrieval["results"]),
+            sources=sources,
             latency_ms=round(latency_ms, 2),
         )
 
@@ -167,11 +172,16 @@ async def whatsapp_coach_respond(request: CoachRequest) -> CoachResponse:
         raise HTTPException(status_code=502, detail=f"LLM generation failed: {exc}") from exc
 
     latency_ms = (time.perf_counter() - start) * 1000
+    sources = _to_source_metadata(retrieval["results"])
+    audit_log.append_record(
+        "http_api", query_text, answer, False, False,
+        [s.model_dump() for s in sources], latency_ms,
+    )
     return CoachResponse(
         answer=answer,
         escalate_to_human=False,
         low_confidence=False,
-        sources=_to_source_metadata(retrieval["results"]),
+        sources=sources,
         latency_ms=round(latency_ms, 2),
     )
 

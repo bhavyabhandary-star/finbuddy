@@ -123,6 +123,47 @@ jobs:
           git commit -q -m "Deploy customer_ui from finbuddy@${GITHUB_SHA}"
           git push "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/finbuddy-customer-ui" HEAD:main --force
 
+  push-container-images:
+    # Closes the "container registry" gap in docs/PRD.md section 7.1: HF
+    # Spaces builds+deploys in one coupled step and isn't a real independent
+    # registry. This pushes the same three Dockerfiles to GHCR too --
+    # versioned, independently pullable, and needs no new secret (GITHUB_TOKEN
+    # is provided automatically by Actions; `packages: write` below is what
+    # actually grants it push access to ghcr.io).
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - dir: scoring_service
+            image: finbuddy-scoring
+          - dir: rag_service
+            image: finbuddy-rag-coach
+          - dir: customer_ui
+            image: finbuddy-customer-ui
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.image }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.dir }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:latest
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ github.sha }}
+
   drift-report:
     # Best-effort only: NOT verified from the dev session that wrote this
     # (evidently broke pandas locally via a blocked DLL, so this could only

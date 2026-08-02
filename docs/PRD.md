@@ -178,28 +178,37 @@ scale, not something to paper over.
 
 | Layer | Item | Status |
 |---|---|---|
-| Governance | Model registry | Partial -- versioned artifacts (`.joblib`) + champion/challenger files via git/git-LFS, no staging/promotion workflow (MLflow/SageMaker-style registry) |
-| Governance | Audit logs | Missing -- no persistent log of every scoring decision (inputs/outputs/timestamp); RAG coach cites sources per-answer but nothing durable |
+| Governance | Model registry | **Real** (closed) -- `scoring_service/models/registry.py` generates a real inventory per artifact: git commit hash + commit date (from actual `git log`, not invented) and that model's real metrics. Still not a staging/promotion API (MLflow/SageMaker-style) -- disproportionate infra for one developer's models. |
+| Governance | Audit logs | **Real** (closed) -- `scoring_service/api/audit_log.py` and `rag_service/audit_log.py` append every scoring decision and every coach interaction (HTTP + WhatsApp) to a local JSONL log: inputs, outputs, sources, latency, timestamp. Local/append-only, not a durable multi-region log store. |
 | Governance | Model cards | Real -- `f001_credit_scoring_model_card.md` |
-| Governance | Access controls | Missing -- CORS wide open (`*`), no auth/API keys/RBAC on any endpoint. Deliberate for demo accessibility; a real gap for production |
+| Governance | Access controls | Missing -- CORS wide open (`*`), no auth/API keys/RBAC on any endpoint. Deliberate for demo accessibility; a real gap for production. NOT tackled: adding auth now would break the live public demo (the customer PWA calls these APIs directly from the browser) and a client-visible API key isn't real security anyway. |
 | Monitoring | Drift detection | Real, tested (PSI+CUSUM) -- against simulated/synthetic "current" data, since no real production traffic exists yet |
-| Monitoring | Prediction monitoring | Partial -- `latency_ms` returned per call, no persistent store tracking prediction distributions over time |
-| Monitoring | Alerting | Missing -- drift report prints RED/AMBER/GREEN, nothing wired to actually notify anyone |
+| Monitoring | Prediction monitoring | Partial -- `latency_ms` now persisted per call via the audit logs above, but no dashboard/aggregation over that history yet |
+| Monitoring | Alerting | Missing -- drift report prints RED/AMBER/GREEN, nothing wired to actually notify anyone. NOT tackled: would need a real webhook/SMTP target to test against, not just code that's never fired. |
 | Monitoring | Dashboards | Partial -- static HTML report files, not a live/refreshing dashboard |
 | Serving | Model server | Real -- FastAPI, deployed live |
 | Serving | A/B testing | Partial -- champion/challenger routing exists (`canary.py`), explicitly flagged as untested against live traffic |
 | Serving | API gateway | Missing -- no dedicated gateway (rate limiting, routing rules); HF Spaces' own proxy is the only thing in front |
 | Serving | Edge inference | Missing -- not attempted, arguably out of scope for this product |
 | CI/CD & Packaging | Automated pipelines | Real -- GitHub Actions, gated on tests |
-| CI/CD & Packaging | Container registry | Partial -- Dockerized and deployed, but HF Spaces is both registry and host in one step, not a separate registry (GHCR/ECR/Docker Hub) |
+| CI/CD & Packaging | Container registry | **Real** (closed) -- `.github/workflows/deploy.yml`'s `push-container-images` job builds and pushes all three service images to GHCR (`ghcr.io/<owner>/finbuddy-*`), tagged `latest` + commit SHA, using the built-in `GITHUB_TOKEN` (no new secret needed) -- independent of the HF Spaces deploy, which remains the live-serving path. |
 | CI/CD & Packaging | Model packaging | Real -- joblib artifacts |
 | Development | Notebooks | Not used -- by design, real `.py` training scripts instead |
-| Development | Experiment tracking | Missing -- final metrics captured (`f001_metrics.json` etc.), no historical run/hyperparameter tracking (MLflow/W&B) |
-| Development | Model versioning | Partial -- git/git-LFS versions artifacts, no dedicated model-versioning system |
+| Development | Experiment tracking | Missing, deliberately not tackled -- each model here was trained once (one real experiment per model, verified via `git log` on each `*_metrics.json`; F-001 champion vs. challenger is the one genuine two-experiment comparison, already captured as two separate metrics files). Building an MLflow/W&B-style tracker to log a single historical run per model would be hollow infrastructure, not a real capability -- honest to leave this as a gap rather than fabricate one. |
+| Development | Model versioning | Partial -- git/git-LFS versions artifacts (and now `registry.py` surfaces that lineage explicitly), no dedicated model-versioning system |
 | Data | Data lake | Missing -- synthetic data as local CSVs, no real lake storage |
 | Data | Feature store | Partial -- one shared `feature_engineering.py`/`normalizer.py` keeps train/serve features consistent, but no formal feature-store system |
-| Data | Data catalogue | Partial -- RAG corpus docs have real frontmatter metadata; training data doesn't |
-| Data | Lineage tracking | Partial -- each profile tagged `source: synthetic` / `setu_aa_sandbox`; no queryable lineage system |
+| Data | Data catalogue | **Real** (closed) -- `docs/data_catalog.md` documents every dataset's real schema, source, and generation parameters (synthetic UPI + Risk-Trend CSVs, the real Setu sandbox profile, the RAG corpus, the audit logs) |
+| Data | Lineage tracking | Partial, improved -- `docs/data_catalog.md` + `registry.py` together now show real source/generation/commit provenance for every dataset and model artifact; still no single queryable lineage system |
+
+**A note on this follow-up pass:** the items marked "closed" above were picked
+specifically because they were genuinely feasible at this project's actual
+scale using only what already exists (git history, existing metrics files,
+GitHub's built-in container registry access) -- not because every flagged
+gap needed to be closed to look complete. Access controls, alerting, a
+live dashboard, and experiment tracking were deliberately left open with an
+explicit reason each, rather than built superficially just to shrink this
+table.
 
 ## 8. Open items before real production use
 

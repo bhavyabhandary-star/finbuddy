@@ -19,6 +19,7 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from scoring_service.api import audit_log
 from scoring_service.api.scoring_engine import Geography, ScoringEngine
 from scoring_service.voice.asr import transcribe as asr_transcribe
 from scoring_service.voice.intent_classifier import predict_intent
@@ -104,6 +105,7 @@ def score(request: ScoreRequest) -> ScoreResponse:
         raise HTTPException(status_code=500, detail=f"Scoring failed: {exc}") from exc
 
     latency_ms = (time.perf_counter() - start) * 1000
+    audit_log.append_record("/api/v1/score", signals, result, latency_ms)
     return ScoreResponse(user_id=request.user_id, latency_ms=round(latency_ms, 2), **result)
 
 

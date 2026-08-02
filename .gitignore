@@ -8,4 +8,6 @@ __pycache__/
 scoring_service/data/*.csv
 !scoring_service/data/.gitkeep
 scoring_service/data/setu_real_profiles.jsonl
+scoring_service/logs/
+rag_service/logs/
 .ipynb_checkpoints/
