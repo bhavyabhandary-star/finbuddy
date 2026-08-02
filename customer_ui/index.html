@@ -456,12 +456,12 @@ function CoachChat({ lastScoreResult }) {
         <div className="preset-row" style={{ marginBottom: 0, flexShrink: 0, width: "auto" }}>
           <button
             className="preset-btn"
-            style={{ minWidth: 0, flex: "none", fontWeight: language === "english" ? 700 : 400, borderColor: language === "english" ? "var(--series-blue)" : "var(--border)" }}
+            style={{ minWidth: 0, flex: "none", padding: "8px 18px", fontSize: "0.95rem", textAlign: "center", fontWeight: language === "english" ? 700 : 400, borderColor: language === "english" ? "var(--series-blue)" : "var(--border)" }}
             onClick={() => setLanguage("english")}
           >English</button>
           <button
             className="preset-btn"
-            style={{ minWidth: 0, flex: "none", fontWeight: language === "hindi" ? 700 : 400, borderColor: language === "hindi" ? "var(--series-blue)" : "var(--border)" }}
+            style={{ minWidth: 0, flex: "none", padding: "8px 18px", fontSize: "1.05rem", textAlign: "center", fontWeight: language === "hindi" ? 700 : 400, borderColor: language === "hindi" ? "var(--series-blue)" : "var(--border)" }}
             onClick={() => setLanguage("hindi")}
           >हिंदी</button>
         </div>

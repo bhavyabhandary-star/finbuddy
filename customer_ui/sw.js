@@ -7,7 +7,7 @@
 // indefinitely; a fresh CACHE_NAME is what makes `activate` actually purge
 // the stale one and `install` re-fetch the new files. (Found the hard way:
 // the v1 shell kept serving pre-Hindi-toggle markup after that deploy.)
-const CACHE_NAME = "finbuddy-shell-v2";
+const CACHE_NAME = "finbuddy-shell-v3";
 const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icon.svg"];
 
 const API_HOSTS = ["bhavyabhandary-finbuddy-scoring.hf.space", "bhavyabhandary-finbuddy-rag-coach.hf.space"];
