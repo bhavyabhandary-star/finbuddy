@@ -8,6 +8,9 @@ This README covers the production-track build (`scoring_service/` + `rag_service
 The original hackathon-prototype n8n demo (`finbuddy_n8n_workflow.json`, `finbuddy_setup.md`)
 predates this work and is kept for reference, not part of this system.
 
+Product requirements and scope: [docs/PRD.md](docs/PRD.md). Judge/demo walkthrough:
+[docs/demo_script.md](docs/demo_script.md).
+
 ## What's real vs. demo-grade -- read this before trusting any number below
 
 This project targets RBI Digital Lending Directions, 2025 and DPDP Act/Rules, 2025
