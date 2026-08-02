@@ -17,9 +17,10 @@ requirement here, not a caveat to skim past.
 | Component | Status |
 |---|---|
 | F-001/003/006/012/Risk-Trend models | **Real, trained, tested** -- on synthetic data (no real Setu AA data exists for this project). Every metric below is a statement about the synthetic generator, not real repayment behavior. |
-| Setu AA sandbox integration (`scoring_service/setu_integration/`) | **Real code**, hits Setu's actual documented API shape -- but untested end-to-end (needs sandbox credentials from bridge.setu.co, which this session didn't have). |
-| F-007/9 voice/intent | Intent classifier: real, tested (100% on a small held-out set, LaBSE embeddings chosen after empirically ruling out a weaker multilingual model on Tamil). ASR: pretrained Whisper-small, only mechanically smoke-tested (no real Hindi/Tamil audio sample was available to validate transcription quality). |
-| RAG corpus + retrieval + WhatsApp coach | **Real**, running against a live Postgres+pgvector (Neon) and a real Groq API key. 20/20 Gate B tests pass, including real (non-mocked) LLM faithfulness tests. |
+| Setu AA sandbox integration (`scoring_service/setu_integration/`) | **Real, verified end-to-end** against the live sandbox: real OAuth token exchange, real consent creation (HTTP 201), real human approval via the mock-FIP webview, real data-session fetch of mock bank transactions, real normalization, real F-001 scoring. Two real docs-vs-live mismatches were found and fixed in the process (the token-exchange endpoint isn't documented anywhere public; the live API returns `FIstatus` where the docs' own example shows `status`) -- see `setu_integration/client.py`'s docstring for exactly what was empirically confirmed vs. assumed. |
+| WhatsApp/Twilio integration (`rag_service/whatsapp_webhook.py`) | **Real, verified end-to-end** against a live Twilio WhatsApp Sandbox -- a real WhatsApp message routes through Twilio to the deployed webhook, through the same retrieval+Groq pipeline as the HTTP coach API, and a real reply lands back in WhatsApp (~9s round trip, confirmed in Twilio's own message logs). Signature validation (`X-Twilio-Signature`) is real, not stubbed. Voice notes are explicitly NOT transcribed: WhatsApp sends Opus/OGG, and the ASR module only reads plain WAV without `ffmpeg` (not installed on the dev machine) -- a voice note gets an honest "please type instead" reply rather than being silently dropped or mistranscribed. |
+| F-007/9 voice/intent | Intent classifier: real, tested (100% on a small held-out set, LaBSE embeddings chosen after empirically ruling out a weaker multilingual model on Tamil). ASR: pretrained Whisper-small, only mechanically smoke-tested (no real Hindi/Tamil audio sample was available to validate transcription quality; not wired to WhatsApp voice notes yet either, see row above). |
+| RAG corpus + retrieval + WhatsApp coach | **Real**, running against a live Postgres+pgvector (Neon) and a real Groq API key. 20/20 Gate B tests + 6 WhatsApp webhook tests pass, including real (non-mocked) LLM faithfulness tests. |
 | Fairness audit (F-012) | **Real audit, real mitigation, real unresolved item.** Geography/income_band equalized-odds-difference stays above the 0.05 target by mathematical necessity (see below) -- flagged for human Risk & Compliance sign-off, not silently passed. |
 | PSI + CUSUM drift monitoring | **Real, tested** (pure numpy, not the `evidently` package -- see `scoring_service/monitoring/drift_report.py` for why). A literal Evidently-branded variant exists but is unverified (untestable on the dev machine; runs in CI on Linux instead). |
 | Docker images | Written correctly per best practice, but **not build-tested locally** -- this machine's virtualization is disabled at the firmware level (confirmed via `systeminfo`), so Docker Desktop cannot run here. Verified structurally, not with an actual `docker build`. |
@@ -97,6 +98,56 @@ Gate B's faithfulness tests specifically assert the coach states the verified 24
 data-repatriation rule correctly and never asserts the unverified retention figure as
 fact -- tested against the real deployed Groq model, not just a mock.
 
+## Real Setu AA integration -- what was actually verified
+
+Every step below is a real, live call against the sandbox at `fiu-sandbox.setu.co`,
+not a mock:
+
+1. `POST https://orgservice-prod.setu.co/v1/users/login` (a different host than the
+   API itself, undocumented publicly -- found by extracting Setu's own Postman
+   collection JSON) exchanges `client_id`/`secret` for a short-lived bearer JWT.
+2. `POST /v2/consents` with that token -> real HTTP 201, real consent id, real
+   human-approval URL.
+3. A human (project owner) opened that URL and approved via Setu's mock-FIP webview,
+   using their own real phone number to bypass OneMoney AA's UAT number-whitelisting
+   requirement (a real external constraint documented in Setu's own docs -- there is
+   no shared pre-whitelisted test number).
+4. `POST /v2/sessions` + polling `GET /v2/sessions/:id` -> real `COMPLETED` status
+   with real (Setu-sandbox-generated) mock transaction data, already decrypted
+   server-side by Setu.
+5. Normalized into the 8 UPI signals and scored by the real trained F-001 model:
+   **credit score 738, approved, `is_anomalous: true`** (expected -- this mock
+   account's pattern differs from the synthetic training distribution, not a defect).
+
+Run it yourself (needs real credentials in `scoring_service/.env`, see
+`setu_integration/client.py`'s docstring for exactly how to get them from Bridge):
+```bash
+python -m scoring_service.setu_integration.fetch_real_profile --vua <mobile>@onemoney
+```
+
+## Real WhatsApp integration -- what was actually verified
+
+Real message exchange via the live Twilio Sandbox, confirmed in Twilio's own message
+logs (`Messages.json` API), not just "the endpoint returns 200":
+
+```
+[10:52:52] inbound  "Why do you need my UPI transaction data?"
+[10:53:01] outbound "We need your UPI transaction data to understand your income
+                      story, as most gig workers don't have a traditional credit
+                      history..." (status: read)
+
+[10:55:34] inbound  "What stock should I invest in this week?"
+[10:55:36] outbound "I don't have a confident, verified answer to that from
+                      FinBuddy's policy and coaching material. Let me connect you
+                      with a human coach who can help directly." (status: read)
+```
+
+The second exchange proves two things at once, live: the 0.70 confidence gate
+correctly escalates an off-corpus question instead of guessing, AND the coach
+correctly declines to give investment advice -- both from the same real test.
+The escalation reply is faster (2s vs 9s) because it skips the LLM call entirely,
+exactly as designed.
+
 ## Governance gates
 
 | Gate | Owner | Status |
@@ -164,6 +215,17 @@ curl -X POST https://bhavyabhandary-finbuddy-rag-coach.hf.space/api/v1/whatsapp-
 2. Risk & Compliance sign-off on the geography/income_band equalized-odds gap.
 3. Retrain F-001/F-003/F-006/Risk-Trend on real, consented Setu AA data before any
    real lending decision relies on them -- current metrics describe synthetic data.
-4. Verify the Setu AA sandbox integration end-to-end once sandbox credentials exist.
-5. Confirm the Setu AA base URL and auth header names against your actual Bridge
-   product's Postman collection (documented as unconfirmed in `setu_integration/client.py`).
+4. FinBuddy is not a licensed RBI-regulated FIU (it's a capstone project) -- the Setu
+   integration currently uses a placeholder Bridge display name and TEST-scoped
+   sandbox credentials. Real production use would require formal FIU
+   licensing/Sahamati onboarding before this integration could handle real user
+   consent, per Setu's own "moving to production" requirements.
+5. OneMoney AA (the default sandbox AA partner) requires pre-whitelisting new test
+   phone numbers (1-2 business days via support@setu.co) -- worked around for this
+   verification by using a real, already-network-known number, not solved generally.
+6. WhatsApp voice-note transcription needs an OGG/Opus decoder (`ffmpeg`) added to
+   the `rag_service` deployment -- the ASR pipeline itself (Whisper + intent
+   classifier) is real and tested, just not wired to WhatsApp's actual audio codec.
+7. No phone-number-to-borrower-profile lookup exists yet, so WhatsApp coach replies
+   are never personalized with the user's own credit score/factors -- every reply
+   uses the general (non-personalized) coaching path.

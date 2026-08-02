@@ -14,9 +14,9 @@ rate limits/Space cold-starts cause trouble live.
 transaction signals instead, via consent-based Account Aggregator data. Because this
 feeds real lending decisions, RBI's Digital Lending Directions and DPDP Act apply
 directly -- we treated compliance as a functional requirement throughout, not
-polish. I'll show three things: a real scoring call, a real RAG-grounded compliance
-answer with citations, and the governance gates that would block a bad model from
-shipping."
+polish. I'll show four things: a real scoring call, a real RAG-grounded compliance
+answer with citations, a real WhatsApp exchange through Twilio, and the governance
+gates that would block a bad model from shipping."
 
 ## 2. Live scoring call (60s)
 
@@ -84,6 +84,32 @@ RBI/PMLA and hasn't been confirmed yet. The system won't repeat that conflation 
 it says so, and we have a test (`tests/test_rag_pipeline.py`) that runs against the
 real live model, not a mock, to prove it."
 
+## 3b. Real WhatsApp message, live (45s)
+
+If your phone is joined to the Twilio Sandbox, send an actual WhatsApp message to
+the sandbox number on screen -- e.g. "Why do you need my UPI transaction data?" --
+and show the real reply arriving. This is the same retrieval+Groq pipeline as step 3,
+now proven over the actual channel judges will picture FinBuddy running on, not just
+curl.
+
+If wifi/phone access is unreliable during judging, use this real, already-verified
+exchange as a screenshot backup instead (from Twilio's own message log, not staged):
+
+```
+[10:52:52] inbound  "Why do you need my UPI transaction data?"
+[10:53:01] outbound "We need your UPI transaction data to understand your income
+                      story..." (status: read)
+
+[10:55:34] inbound  "What stock should I invest in this week?"
+[10:55:36] outbound "I don't have a confident, verified answer to that from
+                      FinBuddy's policy and coaching material. Let me connect you
+                      with a human coach who can help directly." (status: read)
+```
+
+The second exchange is worth calling out explicitly: it proves the confidence gate
+AND the no-financial-advice guardrail in one real message, and replies faster (2s vs
+9s) because it skips the LLM call entirely when escalating.
+
 ## 4. Drift monitoring (45s)
 
 ```bash
@@ -119,10 +145,14 @@ quietly picking a side. That's what CI actually blocks or doesn't block on."
 ## 6. Close (30s)
 
 "Everything shown just now was a real API call against a real trained model, a real
-Postgres+pgvector database, and a real Groq model -- not slides. What's still open:
-Legal sign-off on the policy corpus, Risk & Compliance sign-off on that fairness
-trade-off, and retraining on real Setu AA data once that partnership exists. All
-flagged explicitly in the README and the code itself, not glossed over."
+Postgres+pgvector database, a real Groq model, and a real WhatsApp message through
+Twilio -- not slides. We also ran the full Setu Account Aggregator flow live end to
+end: real consent, real human approval, real mock bank data, real score. What's
+still open: Legal sign-off on the policy corpus, Risk & Compliance sign-off on that
+fairness trade-off, formal FIU licensing before this could touch a real user's real
+consent, and retraining on real (not sandbox mock) Setu AA data before any real
+lending decision relies on it. All flagged explicitly in the README and the code
+itself, not glossed over."
 
 ## Backup plan if live calls fail during judging
 
