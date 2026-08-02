@@ -31,6 +31,7 @@ import os
 
 import pytest
 import pytest_asyncio
+from fastapi import HTTPException
 
 from rag_service import llm_client
 from rag_service.main import CoachRequest, whatsapp_coach_respond
@@ -111,13 +112,31 @@ async def test_faithfulness_mock_harness_catches_retention_conflation(monkeypatc
 @pytest.mark.parametrize("case", GOLDEN_QA, ids=[c["id"] for c in GOLDEN_QA])
 async def test_faithfulness_real_groq(case):
     """Calls the actual Groq API. This is the test that validates real
-    model behavior, not just the assertion harness."""
+    model behavior, not just the assertion harness.
+
+    Found in practice, not hypothetically: Groq's free tier caps at 100k
+    tokens/day, and this test (6 golden questions, called on every CI push
+    plus any manual testing sharing the same key) exhausted that quota mid-
+    session, failing with groq.RateLimitError wrapped in a 502. That's an
+    external capacity constraint, not evidence the code regressed -- if this
+    asserted a hard failure, ANY future CI run could flake and block a
+    legitimate deploy purely on shared free-tier quota, not a real problem.
+    Skip (not fail) specifically on rate-limit -- a real code fault still
+    raises through normally, and the mocked harness test above still
+    provides unconditional coverage of the assertion logic regardless of
+    Groq's quota state.
+    """
     request = CoachRequest(
         user_query=case["question"],
         f001_credit_score=720,
         f003_shap_top_3=["income_regularity_score: +", "balance_dip_frequency: -"],
     )
-    response = await whatsapp_coach_respond(request)
+    try:
+        response = await whatsapp_coach_respond(request)
+    except HTTPException as exc:
+        if exc.status_code == 502 and "rate_limit_exceeded" in str(exc.detail):
+            pytest.skip(f"Groq daily token quota exhausted (shared free-tier limit), not a code regression: {exc.detail}")
+        raise
 
     assert not response.escalate_to_human, f"[{case['id']}] unexpectedly escalated: {response.answer}"
     _check_assertions(case, response.answer)
