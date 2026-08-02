@@ -30,6 +30,7 @@ from __future__ import annotations
 import time
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from rag_service import llm_client
@@ -39,6 +40,15 @@ app = FastAPI(
     title="FinBuddy RAG-Grounded WhatsApp Coach",
     description="Retrieval-grounded coaching over FinBuddy's policy/coaching corpus, consumed by n8n / the WhatsApp bot.",
     version="0.1.0",
+)
+
+# See scoring_service/api/main.py for why "*" is a deliberate demo-grade
+# choice here, not an oversight.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 SYSTEM_PROMPT_TEMPLATE = """You are the FinBuddy WhatsApp Coach, helping gig-economy borrowers understand \

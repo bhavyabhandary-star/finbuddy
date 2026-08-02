@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from scoring_service.api.scoring_engine import Geography, ScoringEngine
@@ -26,6 +27,18 @@ app = FastAPI(
     title="FinBuddy Scoring Service",
     description="F-001/F-003/F-006/F-012 real-time credit scoring for gig-economy UPI profiles.",
     version="0.1.0",
+)
+
+# Wide open (*) is a deliberate demo-grade choice, not an oversight: this API
+# has no auth/cookies/session state, every response is either public-corpus-
+# grounded or a synthetic-data-trained score, so cross-origin access doesn't
+# expose anything sensitive. A real production deployment behind real
+# borrower auth would scope this to the actual frontend's origin instead.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Loaded once at process start, not per-request -- this is what keeps p95 well

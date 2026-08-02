@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FinBuddy — Explainable Credit for Gig Workers</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page:           #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --border:         rgba(11,11,11,0.10);
+    --series-blue:    #2a78d6;
+    --seq-100:        #cde2fb;
+    --seq-300:        #6da7ec;
+    --seq-500:        #256abf;
+    --status-good:       #0ca30c;
+    --status-good-text:  #006300;
+    --status-warning:    #fab219;
+    --status-serious:    #ec835a;
+    --status-critical:   #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page:           #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --border:         rgba(255,255,255,0.10);
+      --series-blue:    #3987e5;
+      --seq-100:        #184f95;
+      --seq-300:        #2a78d6;
+      --seq-500:        #86b6ef;
+      --status-good:       #0ca30c;
+      --status-good-text:  #0ca30c;
+      --status-warning:    #fab219;
+      --status-serious:    #ec835a;
+      --status-critical:   #e66767;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page:           #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --border:         rgba(255,255,255,0.10);
+    --series-blue:    #3987e5;
+    --seq-100:        #184f95;
+    --seq-300:        #2a78d6;
+    --seq-500:        #86b6ef;
+    --status-good:       #0ca30c;
+    --status-good-text:  #0ca30c;
+    --status-warning:    #fab219;
+    --status-serious:    #ec835a;
+    --status-critical:   #e66767;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
+  header { margin-bottom: 24px; }
+  header h1 { margin: 0 0 4px; font-size: 1.75rem; letter-spacing: -0.02em; }
+  header p { margin: 0; color: var(--text-secondary); font-size: 0.95rem; }
+  .badge-live {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.75rem; color: var(--status-good-text);
+    background: color-mix(in srgb, var(--status-good) 12%, transparent);
+    border: 1px solid var(--status-good);
+    padding: 2px 8px; border-radius: 999px; margin-top: 8px;
+  }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card h2 { margin: 0 0 4px; font-size: 1.1rem; }
+  .card .hint { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 16px; }
+
+  .preset-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .preset-btn {
+    flex: 1; min-width: 140px;
+    padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--page);
+    color: var(--text-primary); cursor: pointer; font-size: 0.85rem; text-align: left;
+  }
+  .preset-btn:hover { border-color: var(--series-blue); }
+  .preset-btn .emoji { font-size: 1.1rem; margin-right: 6px; }
+  .preset-btn .sub { display: block; color: var(--text-muted); font-size: 0.75rem; margin-top: 2px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; }
+  input, select {
+    width: 100%; padding: 8px 10px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--page); color: var(--text-primary);
+    font-size: 0.9rem; font-variant-numeric: tabular-nums;
+  }
+  .field { margin-bottom: 12px; }
+
+  button.primary {
+    width: 100%; padding: 12px; border-radius: 8px; border: none;
+    background: var(--series-blue); color: #fff; font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; margin-top: 8px;
+  }
+  button.primary:disabled { opacity: 0.6; cursor: default; }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+
+  .error-banner {
+    background: color-mix(in srgb, var(--status-critical) 12%, transparent);
+    border: 1px solid var(--status-critical); color: var(--text-primary);
+    border-radius: 8px; padding: 10px 12px; font-size: 0.85rem; margin-top: 12px;
+  }
+
+  /* Result card */
+  .score-hero { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .score-hero .value { font-size: 2.75rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .score-hero .range { color: var(--text-muted); font-size: 0.85rem; }
+  .score-bar-track { height: 8px; border-radius: 4px; background: var(--gridline); overflow: hidden; margin-bottom: 4px; }
+  .score-bar-fill { height: 100%; background: linear-gradient(90deg, var(--seq-100), var(--seq-300), var(--seq-500)); border-radius: 4px; }
+  .score-scale { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.7rem; margin-bottom: 16px; }
+
+  .status-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px; font-size: 0.85rem; font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .status-chip.good { color: var(--status-good-text); background: color-mix(in srgb, var(--status-good) 14%, transparent); border: 1px solid var(--status-good); }
+  .status-chip.critical { color: var(--status-critical); background: color-mix(in srgb, var(--status-critical) 14%, transparent); border: 1px solid var(--status-critical); }
+  .status-chip.warning { color: var(--text-primary); background: color-mix(in srgb, var(--status-warning) 20%, transparent); border: 1px solid var(--status-warning); }
+
+  .factor {
+    display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--gridline);
+  }
+  .factor:first-child { border-top: none; }
+  .factor .sign { font-weight: 700; width: 18px; flex-shrink: 0; text-align: center; font-variant-numeric: tabular-nums; }
+  .factor .sign.pos { color: var(--status-good-text); }
+  .factor .sign.neg { color: var(--status-critical); }
+  .factor .body p { margin: 0 0 4px; font-size: 0.88rem; }
+  .factor .body .action { color: var(--text-secondary); font-size: 0.8rem; }
+
+  .meta-row { display: flex; gap: 16px; color: var(--text-muted); font-size: 0.75rem; margin-top: 14px; flex-wrap: wrap; }
+
+  /* Coach chat */
+  .chat-log { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; max-height: 420px; overflow-y: auto; }
+  .msg { max-width: 88%; padding: 10px 12px; border-radius: 10px; font-size: 0.88rem; line-height: 1.4; }
+  .msg.user { align-self: flex-end; background: var(--series-blue); color: #fff; }
+  .msg.bot { align-self: flex-start; background: var(--page); border: 1px solid var(--border); }
+  .msg.bot.escalate { border-color: var(--status-warning); }
+  .msg .sources { margin-top: 8px; font-size: 0.72rem; color: var(--text-muted); }
+  .msg .sources div { margin-top: 2px; }
+  .chat-input-row { display: flex; gap: 8px; }
+  .chat-input-row input { flex: 1; }
+  .chat-input-row button { padding: 0 16px; border-radius: 8px; border: none; background: var(--series-blue); color: #fff; cursor: pointer; }
+  .chat-input-row button:disabled { opacity: 0.6; }
+
+  footer { color: var(--text-muted); font-size: 0.75rem; text-align: center; margin-top: 24px; }
+  footer a { color: var(--text-secondary); }
+</style>
+</head>
+<body class="viz-root">
+<div class="wrap">
+
+  <header>
+    <h1>FinBuddy</h1>
+    <p>Explainable credit for gig-economy workers, scored from real UPI signals.</p>
+    <span class="badge-live">● Live — calls the real scoring &amp; coaching APIs, not a mock</span>
+  </header>
+
+  <!-- PROFILE INPUT -->
+  <section class="card">
+    <h2>Get a credit assessment</h2>
+    <p class="hint">Load an example profile or enter your own. This calls the real F-001/F-003/F-006/F-012 pipeline — trained on synthetic data (see the project README), not your real financial information.</p>
+
+    <div class="preset-row">
+      <button class="preset-btn" onclick="loadPreset('rajesh')"><span class="emoji">🛺</span>Rajesh<span class="sub">Swiggy delivery · Bengaluru</span></button>
+      <button class="preset-btn" onclick="loadPreset('meena')"><span class="emoji">🛒</span>Meena<span class="sub">Kirana store owner · Chennai</span></button>
+      <button class="preset-btn" onclick="loadPreset('custom')"><span class="emoji">✏️</span>Custom<span class="sub">Enter your own numbers</span></button>
+    </div>
+
+    <div class="grid">
+      <div class="field">
+        <label for="f_income">Avg monthly income (₹)</label>
+        <input id="f_income" type="number" min="1" />
+      </div>
+      <div class="field">
+        <label for="f_regularity">Income regularity (0–1)</label>
+        <input id="f_regularity" type="number" min="0" max="1" step="0.01" />
+      </div>
+      <div class="field">
+        <label for="f_txcount">UPI transactions / 30d</label>
+        <input id="f_txcount" type="number" min="0" />
+      </div>
+      <div class="field">
+        <label for="f_merchants">Merchant diversity</label>
+        <input id="f_merchants" type="number" min="0" />
+      </div>
+      <div class="field">
+        <label for="f_dips">Balance dip frequency</label>
+        <input id="f_dips" type="number" min="0" />
+      </div>
+      <div class="field">
+        <label for="f_b2b">B2B ratio (0–1)</label>
+        <input id="f_b2b" type="number" min="0" max="1" step="0.01" />
+      </div>
+      <div class="field">
+        <label for="f_txsize">Avg transaction size (₹)</label>
+        <input id="f_txsize" type="number" min="1" />
+      </div>
+      <div class="field">
+        <label for="f_tenure">Tenure (months, 1–12)</label>
+        <input id="f_tenure" type="number" min="1" max="12" />
+      </div>
+      <div class="field" style="grid-column: 1 / -1;">
+        <label for="f_geo">Geography</label>
+        <select id="f_geo">
+          <option value="urban">Urban</option>
+          <option value="semi_urban">Semi-urban</option>
+          <option value="rural">Rural</option>
+        </select>
+        <p class="hint" style="margin-top:4px;margin-bottom:0;">Optional, but without it the fairness-mitigated decision (F-012) can't be applied — the score falls back to a plain probability threshold.</p>
+      </div>
+    </div>
+
+    <button class="primary" id="scoreBtn" onclick="runAssessment()">Get my score</button>
+    <div id="scoreError" style="display:none" class="error-banner"></div>
+  </section>
+
+  <!-- RESULT -->
+  <section class="card" id="resultCard" style="display:none">
+    <h2>Your assessment</h2>
+    <div class="score-hero">
+      <span class="value" id="r_score">—</span>
+      <span class="range">/ 850</span>
+    </div>
+    <div class="score-bar-track"><div class="score-bar-fill" id="r_bar" style="width:0%"></div></div>
+    <div class="score-scale"><span>300</span><span>850</span></div>
+
+    <div id="r_status"></div>
+    <div id="r_anomaly"></div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin:0 0 4px;">Calibrated probability of repayment: <b id="r_prob">—</b></p>
+
+    <h2 style="font-size:0.95rem;margin-top:18px;">Why this decision</h2>
+    <div id="r_factors"></div>
+
+    <div class="meta-row">
+      <span id="r_latency"></span>
+      <span id="r_fairness"></span>
+      <span id="r_income_band"></span>
+    </div>
+  </section>
+
+  <!-- COACH -->
+  <section class="card">
+    <h2>Ask FinBuddy</h2>
+    <p class="hint">Grounded in FinBuddy's real RBI/DPDP policy &amp; coaching corpus — if it doesn't have a verified answer, it says so and hands off to a human coach instead of guessing. Tested in English; the underlying retrieval model is multilingual but Hindi/Tamil chat responses haven't been separately verified here.</p>
+    <div class="chat-log" id="chatLog"></div>
+    <div class="chat-input-row">
+      <input id="chatInput" type="text" placeholder="e.g. why do you need my UPI data?" onkeydown="if(event.key==='Enter') sendChat()" />
+      <button id="chatBtn" onclick="sendChat()">Send</button>
+    </div>
+  </section>
+
+  <footer>
+    <a href="https://bhavyabhandary-finbuddy-scoring.hf.space/docs" target="_blank">Scoring API docs</a>
+    &nbsp;·&nbsp;
+    <a href="https://bhavyabhandary-finbuddy-rag-coach.hf.space/docs" target="_blank">Coach API docs</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/bhavyabhandary-star/finbuddy" target="_blank">Source</a>
+  </footer>
+
+</div>
+
+<script>
+const SCORING_API = "https://bhavyabhandary-finbuddy-scoring.hf.space";
+const COACH_API = "https://bhavyabhandary-finbuddy-rag-coach.hf.space";
+
+const PRESETS = {
+  rajesh: {
+    avg_monthly_income: 20000, income_regularity_score: 0.82, tx_count_30d: 400,
+    merchant_diversity: 12, balance_dip_frequency: 2, b2b_ratio: 0.15,
+    avg_transaction_size: 50, tenure_months: 6, geography: "urban",
+  },
+  meena: {
+    avg_monthly_income: 37000, income_regularity_score: 0.91, tx_count_30d: 900,
+    merchant_diversity: 28, balance_dip_frequency: 0, b2b_ratio: 0.65,
+    avg_transaction_size: 210, tenure_months: 12, geography: "urban",
+  },
+  custom: {
+    avg_monthly_income: 15000, income_regularity_score: 0.5, tx_count_30d: 100,
+    merchant_diversity: 8, balance_dip_frequency: 3, b2b_ratio: 0.1,
+    avg_transaction_size: 150, tenure_months: 3, geography: "semi_urban",
+  },
+};
+
+function loadPreset(name) {
+  const p = PRESETS[name];
+  document.getElementById("f_income").value = p.avg_monthly_income;
+  document.getElementById("f_regularity").value = p.income_regularity_score;
+  document.getElementById("f_txcount").value = p.tx_count_30d;
+  document.getElementById("f_merchants").value = p.merchant_diversity;
+  document.getElementById("f_dips").value = p.balance_dip_frequency;
+  document.getElementById("f_b2b").value = p.b2b_ratio;
+  document.getElementById("f_txsize").value = p.avg_transaction_size;
+  document.getElementById("f_tenure").value = p.tenure_months;
+  document.getElementById("f_geo").value = p.geography;
+}
+loadPreset("rajesh");
+
+let lastScoreResult = null;
+
+async function runAssessment() {
+  const btn = document.getElementById("scoreBtn");
+  const errBox = document.getElementById("scoreError");
+  errBox.style.display = "none";
+  btn.disabled = true;
+  btn.textContent = "Scoring…";
+
+  const payload = {
+    avg_monthly_income: Number(document.getElementById("f_income").value),
+    income_regularity_score: Number(document.getElementById("f_regularity").value),
+    tx_count_30d: Number(document.getElementById("f_txcount").value),
+    merchant_diversity: Number(document.getElementById("f_merchants").value),
+    balance_dip_frequency: Number(document.getElementById("f_dips").value),
+    b2b_ratio: Number(document.getElementById("f_b2b").value),
+    avg_transaction_size: Number(document.getElementById("f_txsize").value),
+    tenure_months: Number(document.getElementById("f_tenure").value),
+    geography: document.getElementById("f_geo").value || null,
+  };
+
+  try {
+    const res = await fetch(`${SCORING_API}/api/v1/score`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(`API error ${res.status}: ${detail}`);
+    }
+    const data = await res.json();
+    lastScoreResult = data;
+    renderResult(data);
+  } catch (err) {
+    errBox.textContent = `Couldn't get a score: ${err.message}`;
+    errBox.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Get my score";
+  }
+}
+
+function renderResult(data) {
+  document.getElementById("resultCard").style.display = "block";
+  document.getElementById("r_score").textContent = data.credit_score;
+  const pct = ((data.credit_score - 300) / (850 - 300)) * 100;
+  document.getElementById("r_bar").style.width = `${Math.max(0, Math.min(100, pct))}%`;
+  document.getElementById("r_prob").textContent = `${Math.round(data.calibrated_probability_of_repayment * 100)}%`;
+
+  const statusEl = document.getElementById("r_status");
+  statusEl.innerHTML = data.approved
+    ? `<span class="status-chip good">✓ Approved</span>`
+    : `<span class="status-chip critical">✕ Not approved</span>`;
+
+  const anomalyEl = document.getElementById("r_anomaly");
+  anomalyEl.innerHTML = data.is_anomalous
+    ? `<div class="status-chip warning">⚠ Unusual UPI pattern detected — ${escapeHtml(data.anomaly_note || "")}</div>`
+    : "";
+
+  const factorsEl = document.getElementById("r_factors");
+  factorsEl.innerHTML = data.top_3_factors.map(f => `
+    <div class="factor">
+      <span class="sign ${f.direction === 'positive' ? 'pos' : 'neg'}">${f.direction === 'positive' ? '+' : '−'}</span>
+      <div class="body">
+        <p>${escapeHtml(f.plain_english)}</p>
+        <p class="action">${escapeHtml(f.action)}</p>
+      </div>
+    </div>
+  `).join("");
+
+  document.getElementById("r_latency").textContent = `Scored in ${Math.round(data.latency_ms)}ms`;
+  document.getElementById("r_fairness").textContent = data.fairness_mitigation_applied
+    ? "Fairness-mitigated decision (F-012)"
+    : "Plain threshold (no geography supplied)";
+  document.getElementById("r_income_band").textContent = `Income band: ${data.income_band}`;
+}
+
+async function sendChat() {
+  const input = document.getElementById("chatInput");
+  const btn = document.getElementById("chatBtn");
+  const log = document.getElementById("chatLog");
+  const query = input.value.trim();
+  if (!query) return;
+
+  log.innerHTML += `<div class="msg user">${escapeHtml(query)}</div>`;
+  input.value = "";
+  btn.disabled = true;
+  log.scrollTop = log.scrollHeight;
+
+  const payload = { user_query: query };
+  if (lastScoreResult) {
+    payload.f001_credit_score = lastScoreResult.credit_score;
+    payload.f003_shap_top_3 = lastScoreResult.top_3_factors.map(f => `${f.factor}: ${f.direction === 'positive' ? '+' : '-'}`);
+  }
+
+  try {
+    const res = await fetch(`${COACH_API}/api/v1/whatsapp-coach/respond`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const data = await res.json();
+
+    const sourcesHtml = data.sources.length
+      ? `<div class="sources">${data.sources.map(s => `<div>📄 ${escapeHtml(s.source_file.split(/[\\/]/).pop())} (${Math.round(s.similarity * 100)}% match)</div>`).join("")}</div>`
+      : "";
+    log.innerHTML += `<div class="msg bot ${data.escalate_to_human ? 'escalate' : ''}">${escapeHtml(data.answer)}${sourcesHtml}</div>`;
+  } catch (err) {
+    log.innerHTML += `<div class="msg bot escalate">Something went wrong reaching FinBuddy: ${escapeHtml(err.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+    log.scrollTop = log.scrollHeight;
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str ?? "";
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>
