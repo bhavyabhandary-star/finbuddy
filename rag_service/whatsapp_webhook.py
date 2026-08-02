@@ -120,6 +120,10 @@ async def twilio_whatsapp_webhook(request: Request) -> Response:
         context=_build_context_block(retrieval["results"]),
         credit_score="not provided",
         shap_factors="not provided",
+        # WhatsApp stays English-only for now -- the language toggle is
+        # scoped to the customer PWA only (see main.py's HINDI_INSTRUCTION
+        # docstring for why Hindi output isn't independently verified yet).
+        language_instruction="",
     )
 
     try:

@@ -386,11 +386,33 @@ function ResultCard({ data }) {
   );
 }
 
+// Hindi strings here are NOT verified by a native speaker -- same honest
+// caveat as the coach's own Hindi replies (see rag_service/main.py's
+// HINDI_INSTRUCTION docstring). Kept to a small, fixed dictionary rather
+// than a full i18n framework since this is the only bilingual surface in
+// the app right now.
+const COACH_STRINGS = {
+  english: {
+    heading: "Ask FinBuddy",
+    hint: "Grounded in FinBuddy's real RBI/DPDP policy & coaching corpus — if it doesn't have a verified answer, it says so and hands off to a human coach instead of guessing.",
+    placeholder: "e.g. why do you need my UPI data?",
+    send: "Send",
+  },
+  hindi: {
+    heading: "फिनबडी से पूछें",
+    hint: "FinBuddy के असली RBI/DPDP नीति और मार्गदर्शन दस्तावेज़ों पर आधारित — अगर कोई सत्यापित जवाब नहीं है, तो यह अनुमान लगाने के बजाय साफ बताता है और मानव सहायक से जोड़ देता है। (हिंदी अनुवाद मानव-सत्यापित नहीं है)",
+    placeholder: "जैसे: मेरा UPI डेटा क्यों चाहिए?",
+    send: "भेजें",
+  },
+};
+
 function CoachChat({ lastScoreResult }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [language, setLanguage] = useState("english");
   const logRef = useRef(null);
+  const t = COACH_STRINGS[language];
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -403,7 +425,7 @@ function CoachChat({ lastScoreResult }) {
     setInput("");
     setSending(true);
 
-    const payload = { user_query: query };
+    const payload = { user_query: query, response_language: language };
     if (lastScoreResult) {
       payload.f001_credit_score = lastScoreResult.credit_score;
       payload.f003_shap_top_3 = lastScoreResult.top_3_factors.map(
@@ -429,8 +451,22 @@ function CoachChat({ lastScoreResult }) {
 
   return (
     <section className="card">
-      <h2>Ask FinBuddy</h2>
-      <p className="hint">Grounded in FinBuddy's real RBI/DPDP policy &amp; coaching corpus — if it doesn't have a verified answer, it says so and hands off to a human coach instead of guessing. Tested in English; the underlying retrieval model is multilingual but Hindi/Tamil chat responses haven't been separately verified here.</p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+        <h2 style={{ margin: 0 }}>{t.heading}</h2>
+        <div className="preset-row" style={{ marginBottom: 0, flexShrink: 0, width: "auto" }}>
+          <button
+            className="preset-btn"
+            style={{ minWidth: 0, flex: "none", fontWeight: language === "english" ? 700 : 400, borderColor: language === "english" ? "var(--series-blue)" : "var(--border)" }}
+            onClick={() => setLanguage("english")}
+          >English</button>
+          <button
+            className="preset-btn"
+            style={{ minWidth: 0, flex: "none", fontWeight: language === "hindi" ? 700 : 400, borderColor: language === "hindi" ? "var(--series-blue)" : "var(--border)" }}
+            onClick={() => setLanguage("hindi")}
+          >हिंदी</button>
+        </div>
+      </div>
+      <p className="hint">{t.hint}</p>
       <div className="chat-log" ref={logRef}>
         {messages.map((m, i) =>
           m.role === "user"
@@ -452,12 +488,12 @@ function CoachChat({ lastScoreResult }) {
       <div className="chat-input-row">
         <input
           type="text"
-          placeholder="e.g. why do you need my UPI data?"
+          placeholder={t.placeholder}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") sendChat(); }}
         />
-        <button disabled={sending} onClick={sendChat}>Send</button>
+        <button disabled={sending} onClick={sendChat}>{t.send}</button>
       </div>
     </section>
   );

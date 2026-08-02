@@ -150,3 +150,19 @@ async def test_low_confidence_escalation_fires_on_off_corpus_query():
     assert response.escalate_to_human is True
     assert response.low_confidence is True
     assert "human coach" in response.answer.lower()
+
+
+async def test_response_language_hindi_escalation_uses_fixed_translation():
+    """response_language="hindi" (customer PWA's language toggle) must use the
+    fixed, non-LLM-generated Hindi escalation string on the low-confidence
+    path -- deterministic and needs no live Groq call, unlike the LLM
+    translation path (see main.py's HINDI_INSTRUCTION docstring for why that
+    path's translation fidelity isn't independently verified)."""
+    request = CoachRequest(
+        user_query="what is the weather like today", f003_shap_top_3=[], response_language="hindi",
+    )
+    response = await whatsapp_coach_respond(request)
+
+    assert response.escalate_to_human is True
+    assert "मानव सहायक" in response.answer  # "human coach/assistant" in Hindi
+    assert "human coach" not in response.answer.lower()  # not the English string

@@ -28,6 +28,7 @@ needs to be fast and is (128ms p95, see scoring_service).
 from __future__ import annotations
 
 import time
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -79,11 +80,33 @@ CONTEXT:
 
 BORROWER'S CREDIT SCORE: {credit_score}
 BORROWER'S TOP FACTORS: {shap_factors}
-"""
+{language_instruction}"""
+
+# Appended to the system prompt only when response_language="hindi". The
+# CONTEXT itself stays English-only -- there is no Hindi-native, separately
+# legal-verified corpus, so this is the LLM translating retrieved English
+# policy content into Hindi on the fly. That translation is NOT
+# independently verified for compliance-figure accuracy the way the English
+# answers are (see README's "what's real vs demo-grade" table) -- a
+# real limitation being flagged, not a solved problem, same honesty pattern
+# as the ASR module's untested Hindi/Tamil transcription quality.
+HINDI_INSTRUCTION = (
+    "\nRespond in Hindi (Devanagari script), in a warm, plain-language tone. "
+    "Translate the CONTEXT's meaning accurately -- do not alter, soften, or "
+    "add to any compliance-relevant figure (amounts, percentages, retention "
+    "periods, deadlines) when translating it.\n"
+)
 
 HUMAN_ESCALATION_MESSAGE = (
     "I don't have a confident, verified answer to that from FinBuddy's policy and coaching "
     "material. Let me connect you with a human coach who can help directly."
+)
+
+# Fixed translation (not LLM-generated) -- reliable in the same way a canned
+# string is, but NOT verified by a native Hindi speaker. Flagged, not hidden.
+HUMAN_ESCALATION_MESSAGE_HINDI = (
+    "मुझे इसका कोई भरोसेमंद, सत्यापित जवाब FinBuddy की नीति और मार्गदर्शन सामग्री में नहीं मिला। "
+    "मैं आपको सीधे मदद कर सकने वाले एक मानव सहायक से जोड़ रहा/रही हूँ।"
 )
 
 
@@ -92,6 +115,7 @@ class CoachRequest(BaseModel):
     transcribed_intent: str = ""
     f001_credit_score: int | None = None
     f003_shap_top_3: list[str] = Field(default_factory=list)
+    response_language: Literal["english", "hindi"] = "english"
 
 
 class SourceMetadata(BaseModel):
@@ -148,12 +172,15 @@ async def whatsapp_coach_respond(request: CoachRequest) -> CoachResponse:
     if retrieval["low_confidence"]:
         latency_ms = (time.perf_counter() - start) * 1000
         sources = _to_source_metadata(retrieval["results"])
+        escalation_message = (
+            HUMAN_ESCALATION_MESSAGE_HINDI if request.response_language == "hindi" else HUMAN_ESCALATION_MESSAGE
+        )
         audit_log.append_record(
-            "http_api", query_text, HUMAN_ESCALATION_MESSAGE, True, True,
+            "http_api", query_text, escalation_message, True, True,
             [s.model_dump() for s in sources], latency_ms,
         )
         return CoachResponse(
-            answer=HUMAN_ESCALATION_MESSAGE,
+            answer=escalation_message,
             escalate_to_human=True,
             low_confidence=True,
             sources=sources,
@@ -164,6 +191,7 @@ async def whatsapp_coach_respond(request: CoachRequest) -> CoachResponse:
         context=_build_context_block(retrieval["results"]),
         credit_score=request.f001_credit_score if request.f001_credit_score is not None else "not provided",
         shap_factors=", ".join(request.f003_shap_top_3) if request.f003_shap_top_3 else "not provided",
+        language_instruction=HINDI_INSTRUCTION if request.response_language == "hindi" else "",
     )
 
     try:
