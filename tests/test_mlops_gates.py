@@ -207,3 +207,31 @@ def test_f012_audit_report_artifact_is_current():
         report = json.load(f)
     assert "recommended_gate_a_interpretation" in report
     assert "income_band_caveat" in report
+
+
+def test_classification_metrics_are_structurally_sound():
+    """Not a new governance gate (no threshold from the program spec covers
+    accuracy/precision/recall/confusion-matrix or champion-vs-challenger
+    prediction drift) -- this only asserts the numbers evaluate_classification.py
+    produces are internally consistent, so a script bug (NaN, empty result,
+    a confusion matrix that doesn't sum to n_test) fails loudly instead of
+    silently shipping a wrong report."""
+    from scoring_service.models.evaluate_classification import evaluate_f001_champion_vs_challenger, evaluate_risk_trend
+
+    f001 = evaluate_f001_champion_vs_challenger()
+    for arm in ("champion", "challenger"):
+        m = f001[arm]
+        cm = m["confusion_matrix"]
+        assert cm["true_negative"] + cm["false_positive"] + cm["false_negative"] + cm["true_positive"] == f001["n_test"]
+        for key in ("accuracy", "precision", "recall", "f1"):
+            assert 0.0 <= m[key] <= 1.0, f"{arm} {key}={m[key]} out of [0,1]"
+
+    drift = f001["prediction_drift_champion_vs_challenger"]
+    assert drift["psi_on_probability_output"] >= 0
+    assert 0.0 <= drift["approve_deny_decision_flip_rate"] <= 1.0
+
+    rt = evaluate_risk_trend()
+    cm = rt["confusion_matrix"]
+    assert cm["true_negative"] + cm["false_positive"] + cm["false_negative"] + cm["true_positive"] == rt["n_test"]
+    for key in ("accuracy", "precision", "recall", "f1"):
+        assert 0.0 <= rt[key] <= 1.0
