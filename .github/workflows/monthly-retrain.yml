@@ -1,0 +1,67 @@
+# Monthly Risk-Trend classifier re-run, per the architecture doc's batch
+# scoring mode ("monthly risk-trend classifier re-run on fresh UPI
+# windows"). Real production would pull a fresh window of consented Setu AA
+# data here; that doesn't exist for this project yet, so this regenerates
+# the synthetic data generator's window instead -- same honesty pattern as
+# everywhere else in this repo, not silently presented as real data.
+#
+# Retrain -> validate against the governance gate (ROC-AUC >= 0.96) ->
+# promote (commit the new artifact) ONLY if the gate passes. A failing gate
+# fails the job loudly and does NOT commit -- never silently ships a worse
+# model. A successful commit to master naturally triggers deploy.yml's
+# normal CI/CD (Gate A + Gate B, then redeploy) same as any other push.
+
+name: Monthly Risk-Trend Retrain
+
+on:
+  schedule:
+    - cron: "0 0 1 * *" # 00:00 UTC on the 1st of every month
+  workflow_dispatch: {} # manual trigger, for testing without waiting a month
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # needed to push the promoted commit back to master
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: pip install -r scoring_service/requirements.txt
+
+      - name: Regenerate synthetic UPI window
+        # Stand-in for "fresh Setu AA data" -- see module docstring.
+        run: python -m scoring_service.data.generate_synthetic_upi_data
+
+      - name: Retrain Risk-Trend classifier
+        run: python -m scoring_service.models.train_risk_trend
+
+      - name: Validate against governance gate (ROC-AUC >= 0.96)
+        id: gate
+        run: |
+          python -c "
+          import json, sys
+          with open('scoring_service/models/artifacts/risk_trend_metrics.json') as f:
+              m = json.load(f)
+          print(json.dumps(m, indent=2))
+          if not m['gate_pass']:
+              print(f\"GATE FAILED: ROC-AUC {m['roc_auc_holdout']} < target {m['roc_auc_target']}\")
+              sys.exit(1)
+          print('Gate passed -- promoting this retrain.')
+          "
+
+      - name: Commit and push the promoted model (only reached if the gate passed)
+        run: |
+          git config user.email "ci@finbuddy.local"
+          git config user.name "FinBuddy Monthly Retrain"
+          git add scoring_service/models/artifacts/risk_trend_logreg.joblib scoring_service/models/artifacts/risk_trend_metrics.json
+          if git diff --cached --quiet; then
+            echo "No change in the retrained artifact -- nothing to commit."
+          else
+            git commit -m "Monthly Risk-Trend retrain: $(date -u +%Y-%m-%d), ROC-AUC $(python -c "import json; print(json.load(open('scoring_service/models/artifacts/risk_trend_metrics.json'))['roc_auc_holdout'])")"
+            git push origin HEAD:master
+          fi

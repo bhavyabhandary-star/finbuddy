@@ -4,7 +4,7 @@ emoji: 💳
 colorFrom: blue
 colorTo: purple
 sdk: docker
-app_port: 80
+app_port: 8080
 pinned: false
 ---
 
@@ -18,5 +18,8 @@ hackathon's hardcoded n8n mock data -- this one has no fabricated content: every
 number and factor shown comes from a real API call to a real trained model or a
 real Groq-generated, corpus-grounded answer.
 
-Single static file (`index.html`), served by nginx -- no build step, no backend of
-its own.
+A real installable PWA (manifest + service worker), built as React loaded via CDN
+(no build step, still a single deployable static directory) -- not the earlier
+plain-JS version. The static app shell is cached for offline load; every API call
+(score, coach) always goes to the network, never cached, since that data must
+always be live.

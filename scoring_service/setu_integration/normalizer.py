@@ -132,11 +132,19 @@ def normalize_deposit_account(
 
 
 def normalize_session_response(session: dict, protected_attrs: dict | None = None) -> list[dict]:
-    """Walk every DELIVERED deposit account in a completed data session."""
+    """Walk every ready/delivered deposit account in a completed data session.
+
+    The live API returns the per-account status under `FIstatus` (values
+    READY/DELIVERED/PENDING/TIMEOUT/DENIED per Setu's Data flow docs), not
+    under a `status` key as the docs' own JSON example showed -- confirmed
+    against a real completed session on 2026-08-02. Both keys are checked
+    since the doc example isn't reliable evidence of the live shape.
+    """
     profiles = []
     for fip in session.get("fips") or []:
         for account in fip.get("accounts", []):
-            if account.get("status") != "DELIVERED":
+            fi_status = account.get("FIstatus") or account.get("status")
+            if fi_status not in ("READY", "DELIVERED"):
                 continue
             acc_data = account.get("data", {}).get("account", {})
             if acc_data.get("type") != "deposit":
