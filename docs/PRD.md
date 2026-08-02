@@ -166,6 +166,41 @@ Setu AA consent (purpose 103) -> 12-month UPI pull -> normalize to 8 signals
   naming — out of reach for this build's timeline; a pretrained multilingual
   Whisper model is integrated instead, clearly flagged as such.
 
+### 7.1 MLOps platform maturity -- explicit self-assessment
+
+Measured against a standard 6-layer MLOps reference architecture (Governance,
+Monitoring, Serving, CI/CD & Packaging, Development, Data). FinBuddy is
+deliberately strongest on the layers a reviewer can directly observe and
+verify live (serving, CI/CD, drift detection, governance gates, model
+cards) and thin on the enterprise-platform layers that assume a much larger
+team and real production traffic. That gap is expected at this stage and
+scale, not something to paper over.
+
+| Layer | Item | Status |
+|---|---|---|
+| Governance | Model registry | Partial -- versioned artifacts (`.joblib`) + champion/challenger files via git/git-LFS, no staging/promotion workflow (MLflow/SageMaker-style registry) |
+| Governance | Audit logs | Missing -- no persistent log of every scoring decision (inputs/outputs/timestamp); RAG coach cites sources per-answer but nothing durable |
+| Governance | Model cards | Real -- `f001_credit_scoring_model_card.md` |
+| Governance | Access controls | Missing -- CORS wide open (`*`), no auth/API keys/RBAC on any endpoint. Deliberate for demo accessibility; a real gap for production |
+| Monitoring | Drift detection | Real, tested (PSI+CUSUM) -- against simulated/synthetic "current" data, since no real production traffic exists yet |
+| Monitoring | Prediction monitoring | Partial -- `latency_ms` returned per call, no persistent store tracking prediction distributions over time |
+| Monitoring | Alerting | Missing -- drift report prints RED/AMBER/GREEN, nothing wired to actually notify anyone |
+| Monitoring | Dashboards | Partial -- static HTML report files, not a live/refreshing dashboard |
+| Serving | Model server | Real -- FastAPI, deployed live |
+| Serving | A/B testing | Partial -- champion/challenger routing exists (`canary.py`), explicitly flagged as untested against live traffic |
+| Serving | API gateway | Missing -- no dedicated gateway (rate limiting, routing rules); HF Spaces' own proxy is the only thing in front |
+| Serving | Edge inference | Missing -- not attempted, arguably out of scope for this product |
+| CI/CD & Packaging | Automated pipelines | Real -- GitHub Actions, gated on tests |
+| CI/CD & Packaging | Container registry | Partial -- Dockerized and deployed, but HF Spaces is both registry and host in one step, not a separate registry (GHCR/ECR/Docker Hub) |
+| CI/CD & Packaging | Model packaging | Real -- joblib artifacts |
+| Development | Notebooks | Not used -- by design, real `.py` training scripts instead |
+| Development | Experiment tracking | Missing -- final metrics captured (`f001_metrics.json` etc.), no historical run/hyperparameter tracking (MLflow/W&B) |
+| Development | Model versioning | Partial -- git/git-LFS versions artifacts, no dedicated model-versioning system |
+| Data | Data lake | Missing -- synthetic data as local CSVs, no real lake storage |
+| Data | Feature store | Partial -- one shared `feature_engineering.py`/`normalizer.py` keeps train/serve features consistent, but no formal feature-store system |
+| Data | Data catalogue | Partial -- RAG corpus docs have real frontmatter metadata; training data doesn't |
+| Data | Lineage tracking | Partial -- each profile tagged `source: synthetic` / `setu_aa_sandbox`; no queryable lineage system |
+
 ## 8. Open items before real production use
 
 1. Legal sign-off on all corpus policy documents.
