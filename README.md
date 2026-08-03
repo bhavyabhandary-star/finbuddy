@@ -8,8 +8,10 @@ This README covers the production-track build (`scoring_service/` + `rag_service
 The original hackathon-prototype n8n demo (`finbuddy_n8n_workflow.json`, `finbuddy_setup.md`)
 predates this work and is kept for reference, not part of this system.
 
-Product requirements and scope: [docs/PRD.md](docs/PRD.md). Judge/demo walkthrough:
-[docs/demo_script.md](docs/demo_script.md). Dataset inventory: [docs/data_catalog.md](docs/data_catalog.md).
+Product requirements and scope: [docs/PRD.md](docs/PRD.md). Technical architecture
+(tools, data pipeline, ML models, MLOps): [docs/architecture.md](docs/architecture.md).
+Judge/demo walkthrough: [docs/demo_script.md](docs/demo_script.md). Dataset inventory:
+[docs/data_catalog.md](docs/data_catalog.md).
 
 ## What's real vs. demo-grade -- read this before trusting any number below
 
