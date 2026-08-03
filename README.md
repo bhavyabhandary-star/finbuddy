@@ -12,7 +12,9 @@ Product requirements and scope: [docs/PRD.md](docs/PRD.md). Technical architectu
 (tools, data pipeline, ML models, MLOps): [docs/architecture.md](docs/architecture.md).
 Judge/demo walkthrough: [docs/demo_script.md](docs/demo_script.md). Dataset inventory:
 [docs/data_catalog.md](docs/data_catalog.md). EICTA curriculum alignment:
-[docs/curriculum_alignment.md](docs/curriculum_alignment.md).
+[docs/curriculum_alignment.md](docs/curriculum_alignment.md) (plus
+[GTM plan](docs/gtm_plan.md), [ethics & scaling](docs/ethics_and_scaling.md),
+[Module 1 feasibility note](docs/module1_feasibility_note.md)).
 
 ## What's real vs. demo-grade -- read this before trusting any number below
 

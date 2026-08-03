@@ -135,7 +135,7 @@ Two independent pipelines, deliberately not shared:
 | F-001 (challenger) | XGBoost, deeper/slower variant (`n_estimators=350, max_depth=5`) | AUC 0.881 | Not gated — shadow-tested only, see Section 5 |
 | Risk-Trend | Logistic Regression (Ridge/L2) | ROC-AUC 0.9813 (target ≥0.96) | Gate A, hard-blocking |
 | F-006 | Isolation Forest (`contamination=0.03`) | Precision 0.8448 / Recall 0.8909 vs. synthetic injected anomalies | No spec-defined threshold — reported for transparency, not pass/fail |
-| F-012 mitigation | Fairlearn `ThresholdOptimizer` | DPD ≤0.05 and DIR ≥0.80 for gender/geography/income_band (all pass, post-mitigation) | Gate A, hard-blocking (DPD/DIR only — EOD for geography/income_band is a documented human-signoff exception, see PRD section 6) |
+| F-012 mitigation | Fairlearn `ThresholdOptimizer` | DPD ≤0.05 and DIR ≥0.80 achieved by the **deployed** model for geography and income_band only (fit jointly on that intersection). Gender is NOT part of that fit -- its DPD/EOD still fail on the deployed model (DIR passes); a separate, undeployed isolated demo proves gender's gap is fixable on its own. See PRD section 6 for the exact figures. | Gate A, hard-blocking for geography/income_band DPD+DIR; gender DPD/EOD not gated (see PRD section 6); EOD for geography/income_band is a documented human-signoff exception |
 | Intent classifier | LaBSE embeddings + Logistic Regression | 100% on a small held-out Hindi/Tamil/English set | Not gated (no spec threshold), but empirically tested before choosing LaBSE over a weaker alternative |
 | ASR | Pretrained `openai/whisper-small` | Mechanically smoke-tested only (pipeline runs end-to-end) | Not gated — real speech transcription quality NOT independently verified, flagged explicitly |
 

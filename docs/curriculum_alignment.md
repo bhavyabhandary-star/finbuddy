@@ -37,11 +37,10 @@ note.
 - See [architecture.md](architecture.md) section 4 for the full models
   table with real held-out metrics.
 
-**Still needed for the Gate Review format specifically:** a written
-"weekly update + feasibility note" — the technical feasibility is proven
-(real trained model, real metrics), but that's not the same document as a
-week-by-week update log. Worth writing a short retrospective feasibility
-note if the program wants one submitted after the fact.
+**Gate Review format:** [module1_feasibility_note.md](module1_feasibility_note.md) —
+written as a retrospective, including the real false-starts (initial F-001
+AUC shortfall, root-caused and fixed; the blocked `shap` dependency
+workaround), not just the end-state metrics.
 
 ## Module 2 (Weeks 7-11) — LLMs, GenAI & Agentic
 
@@ -80,12 +79,11 @@ Review: strategy review.
   explicit out-of-scope, open items, success metrics, and an MLOps
   maturity self-assessment.
 
-**Real gap:** no GTM plan or ROI framework exists yet. PRD.md is
-requirements/governance-focused, not go-to-market (target segment
-prioritization, pricing/unit economics for an NBFC partnership model,
-launch sequencing, ROI case for a lender adopting this). This is the
-clearest actual gap in the whole alignment — worth building as a
-dedicated `docs/gtm_plan.md` if this module needs a standalone submission.
+**GTM plan:** [gtm_plan.md](gtm_plan.md) — target segments in adoption
+order, value proposition per side of the market, an illustrative (not
+negotiated) monetization model, launch sequence, and risks named plainly
+(explicitly not a validated business model — no customer discovery has
+happened yet, stated as such rather than implied otherwise).
 
 ## Module 4 (Weeks 17-20) — MLOps & Deployment
 
@@ -128,30 +126,24 @@ audit. Gate Review: org plan + risk mitigation.
   profile lookup) and section 7.1 (MLOps maturity gaps named with reasons,
   not hidden).
 
-**Real gap:** no standalone "scaling roadmap" or "org plan" document — the
-open items list covers risk mitigation content, but not organized as an
-adoption/scaling narrative (who adopts this, in what sequence, what
-org-level decisions gate wider rollout). An "ethics audit" as its own
-titled deliverable also doesn't exist separately from the F-012 audit
-JSON + PRD governance section — worth packaging those into a dedicated
-`docs/ethics_and_scaling.md` if the module needs one distinct submission
-rather than pointing at PRD.md.
+**Org plan + risk mitigation + ethics audit:** [ethics_and_scaling.md](ethics_and_scaling.md) —
+repackages the real F-012 figures precisely (including a correction: an
+earlier draft of PRD.md's governance table implied gender passed
+post-mitigation on the deployed model; it doesn't — only geography/
+income_band are part of the deployed joint mitigation, gender's deployed
+DPD/EOD still fail, and that distinction is now stated accurately in both
+documents), a risk-mitigation table with named owners, a 5-gate scaling
+roadmap, and an org decision-rights table.
 
-## Summary: what to build next, if aligning fully
+## Summary
 
-Two modules (1, 4) are fully covered by existing artifacts. Two (2, 5) are
-substantively covered with one named framework/format gap each (LangChain
-naming; a standalone scaling/ethics doc). One (3) has a real, unaddressed
-gap: no GTM plan exists. Recommended order if you want full alignment:
-
-1. `docs/gtm_plan.md` — Module 3's actual gap.
-2. `docs/ethics_and_scaling.md` — repackages real F-012/PRD content into
-   Module 5's expected shape (org plan + risk mitigation), not new
-   analysis.
-3. A short Module 1 "feasibility note" retrospective, if the program wants
-   the weekly-update format specifically rather than the end-state metrics.
-
-Not recommended: retrofitting a LangChain layer just to match Module 2's
-tool name-check — the underlying RAG/agentic behavior is real and
-demoable; naming the actual stack honestly in a submission is safer than
-adding a framework dependency purely for rubric-matching.
+All three previously-identified gaps are now closed:
+[gtm_plan.md](gtm_plan.md) (Module 3), [ethics_and_scaling.md](ethics_and_scaling.md)
+(Module 5), and [module1_feasibility_note.md](module1_feasibility_note.md)
+(Module 1's weekly-update format specifically). Modules 1 and 4 were
+already fully covered by existing artifacts. The one deliberately
+un-closed gap remains Module 2's LangChain naming — retrofitting a
+LangChain layer just to match a tool name-check wasn't done; the
+underlying RAG/agentic behavior is real and demoable, and naming the
+actual stack honestly in a submission is safer than adding a framework
+dependency purely for rubric-matching.
