@@ -1,7 +1,7 @@
 # FinBuddy — Product Requirements Document
 
 **Status:** Capstone / hackathon build, production-track architecture.
-**Last updated:** 2026-08-02
+**Last updated:** 2026-08-03
 **Owner:** Bhavya Bhandary
 
 This PRD states what FinBuddy is required to do and why. For proof of what's
@@ -74,6 +74,7 @@ up as a citation (Section 5.3).
 | — | RAG Coach | Answer borrower questions about their score, FinBuddy's data practices, and RBI/DPDP policy using ONLY retrieved, cited corpus content — never unsupported model knowledge. Escalate to a human coach below a similarity-confidence threshold rather than guess. |
 | — | WhatsApp delivery | The RAG Coach must be reachable over real WhatsApp (not just an internal API), since that's the channel borrowers actually have. |
 | — | Setu AA integration | Fetch UPI signals via a real, consent-gated Account Aggregator pull (Setu), not a synthetic proxy, before any live lending decision. |
+| — | Hindi language toggle | The customer PWA's coach chat must offer a real English/Hindi switch, not just an English-only demo. Scoped to the PWA only (not WhatsApp, which has no session store to remember a per-user language preference). |
 
 ## 5. Architecture requirements
 
@@ -89,7 +90,13 @@ needs and shouldn't share a failure mode:
    want periodic risk refresh without a live call per borrower.
 3. **Champion/challenger** — a documented routing + metrics-comparison
    mechanism for safely rolling out a retrained model against a fraction of
-   traffic before full cutover.
+   traffic before full cutover. Comparison covers two angles:
+   `canary.py`'s shadow test (AUC/approval-rate per arm on a live-style
+   traffic split) and `evaluate_classification.py`'s same-data comparison
+   (accuracy/precision/recall/confusion matrix for each model, plus
+   prediction-drift between them via PSI on their probability outputs and
+   an approve/deny decision-flip rate) — real numbers as of this writing:
+   PSI 0.0149 (near-identical), 2.55% decision-flip rate.
 
 ### 5.2 Data flow
 
@@ -165,6 +172,15 @@ Setu AA consent (purpose 103) -> 12-month UPI pull -> normalize to 8 signals
 - A Conformer ASR model trained from scratch, per the original brief's F-9
   naming — out of reach for this build's timeline; a pretrained multilingual
   Whisper model is integrated instead, clearly flagged as such.
+- A separately-verified Hindi corpus — the Hindi toggle's replies are Groq
+  translating the same English-verified retrieval context on the fly; that
+  translation's fidelity for compliance-critical figures (retention
+  periods, amounts, deadlines) is NOT independently verified the way the
+  English answers are. The one Hindi string that IS reliable to the same
+  standard as English is the low-confidence escalation message, since it's
+  fixed and human-written, not LLM-translated. Kannada was considered and
+  intentionally dropped from scope (see Section 8) given weaker current
+  LLM support for it than Hindi.
 
 ### 7.1 MLOps platform maturity -- explicit self-assessment
 
@@ -223,6 +239,13 @@ table.
 6. Design and build a phone-number-to-borrower-profile lookup so WhatsApp
    coach replies can be personalized with the borrower's actual score and
    factors.
+7. Kannada language support — discussed and intentionally deferred in favor
+   of shipping Hindi first, given Kannada's weaker current LLM support
+   would need more translation-fidelity verification work than the
+   timeline allowed.
+8. Extend the Hindi toggle (or a real translation pipeline) to WhatsApp,
+   once a session/profile store exists to remember a per-user language
+   preference across messages.
 
 ## 9. Success metrics (once live with real users)
 
