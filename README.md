@@ -11,7 +11,8 @@ predates this work and is kept for reference, not part of this system.
 Product requirements and scope: [docs/PRD.md](docs/PRD.md). Technical architecture
 (tools, data pipeline, ML models, MLOps): [docs/architecture.md](docs/architecture.md).
 Judge/demo walkthrough: [docs/demo_script.md](docs/demo_script.md). Dataset inventory:
-[docs/data_catalog.md](docs/data_catalog.md).
+[docs/data_catalog.md](docs/data_catalog.md). EICTA curriculum alignment:
+[docs/curriculum_alignment.md](docs/curriculum_alignment.md).
 
 ## What's real vs. demo-grade -- read this before trusting any number below
 
