@@ -13,7 +13,7 @@ pinned: false
 Retrieval-grounded coaching over FinBuddy's RBI/DPDP policy and borrower
 coaching corpus. `POST /api/v1/whatsapp-coach/respond` -- retrieval (pgvector
 cosine search, 0.70 confidence gate) -> strict grounded-only system prompt
--> Groq (llama-3.3-70b-versatile) generation -> answer + source metadata
+-> Groq (openai/gpt-oss-120b; was llama-3.3-70b-versatile until Groq retired it on 2026-08-16) generation -> answer + source metadata
 for every retrieved chunk.
 
 **Required secrets** (set via this Space's Settings -> Repository secrets):

@@ -12,7 +12,10 @@ from groq import AsyncGroq
 
 load_dotenv()
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
+# Groq shut down llama-3.3-70b-versatile on 2026-08-16 (their deprecations page
+# names openai/gpt-oss-120b as the replacement); CI began failing with
+# model_not_found. Override with GROQ_MODEL without a code change if it moves again.
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 
 _client: AsyncGroq | None = None
 
@@ -39,6 +42,9 @@ async def generate(system_prompt: str, user_prompt: str) -> str:
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.2,  # low -- this is a compliance-adjacent grounded-answer task, not creative writing
-        max_tokens=500,
+        # gpt-oss is a reasoning model: its reasoning tokens count against the cap, so keep the
+        # effort low and leave room, or a 500-token cap can truncate the visible answer.
+        max_tokens=1200,
+        extra_body={"reasoning_effort": "low"},
     )
     return completion.choices[0].message.content

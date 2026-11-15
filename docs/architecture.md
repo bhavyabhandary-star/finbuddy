@@ -29,7 +29,7 @@ flowchart TB
 
     subgraph RAG["rag_service (FastAPI)"]
         RETRIEVE["retriever.py\npgvector cosine search"]
-        GROQ["Groq llama-3.3-70b\ngrounded generation"]
+        GROQ["Groq gpt-oss-120b\ngrounded generation"]
         TWILIO_WH["whatsapp_webhook.py\nTwilio signature-verified"]
     end
 
@@ -83,7 +83,7 @@ monolith, so a RAG-service outage never takes down real-time scoring.
 | Intent classification | `sentence-transformers` (LaBSE) + `LogisticRegression` head | LaBSE chosen after empirically testing against a weaker multilingual model that failed real Tamil test queries |
 | RAG embeddings | `sentence-transformers` (`BAAI/bge-small-en-v1.5`) | English-focused, matches the English-only verified corpus (see PRD's Hindi-toggle caveat for why this matters) |
 | Vector store | PostgreSQL + `pgvector` (Neon serverless) | Cosine similarity search; no `evidently`/heavier vector-DB dependency needed at this corpus size (10 documents) |
-| LLM generation | Groq API (`llama-3.3-70b-versatile`) | Free-tier fast inference; genuinely measured latency numbers are in the README, not assumed |
+| LLM generation | Groq API (`openai/gpt-oss-120b`; originally `llama-3.3-70b-versatile`, retired by Groq on 2026-08-16) | Free-tier fast inference; the latency numbers in the README were measured on the original Llama model and have not been re-measured on this one |
 | WhatsApp channel | Twilio WhatsApp Sandbox API | Real signature validation (`twilio.request_validator`), real TwiML replies |
 | AA data source | Setu Account Aggregator API (sandbox) | Real OAuth token exchange + `/v2/consents` + `/v2/sessions` — endpoint details found empirically (see `setu_integration/client.py`'s docstring), not from incomplete public docs |
 | Frontend | React 18 (CDN, Babel standalone) | No build step — the whole customer PWA is one deployable static directory |
