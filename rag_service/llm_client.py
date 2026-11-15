@@ -6,6 +6,7 @@ GROQ_API_KEY (see tests/test_rag_pipeline.py's mock harness).
 from __future__ import annotations
 
 import os
+import re
 
 from dotenv import load_dotenv
 from groq import AsyncGroq
@@ -47,4 +48,14 @@ async def generate(system_prompt: str, user_prompt: str) -> str:
         max_tokens=1200,
         extra_body={"reasoning_effort": "low"},
     )
-    return completion.choices[0].message.content
+    return normalise_typography(completion.choices[0].message.content)
+
+
+def normalise_typography(text: str | None) -> str | None:
+    """gpt-oss writes typographic spaces (U+202F narrow no-break, U+00A0) and "5 %" with a
+    space before the percent sign. That breaks exact-text checks on figures like "5%" and
+    renders oddly in WhatsApp, so use plain spaces and attach "%" to its number."""
+    if text is None:
+        return None
+    text = text.replace(" ", " ").replace(" ", " ")
+    return re.sub(r"(\d) +%", r"\1%", text)
