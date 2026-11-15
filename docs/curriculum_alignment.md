@@ -67,6 +67,19 @@ agent-framework sense (tool-calling, multi-step agent loops) also isn't
 built — the RAG coach's only "tool" is retrieval, not a general
 tool-use loop.
 
+**Update (2026-11-15): closed in a separate repo, not here.** The agentic
+layer was built as a follow-on project,
+[finbuddy-agentic-rag-langgraph](https://github.com/bhavyabhandary-star/finbuddy-agentic-rag-langgraph),
+on LangGraph (a `StateGraph`: route, then retrieve with a bounded
+re-retrieval loop or call this repo's scoring API as a tool, then generate or
+escalate). It adds a trained intent router, a consent-aware Account
+Aggregator path, and guardrails (PII redaction, a lexical answer-grounding
+check, schema validation). Its router scores about 80% on a 30-query blind set
+(roughly ±14 points), and its grounding check is lexical, so it can miss a
+wrong figure. LangGraph is the framework in use; LangChain appears only as an
+optional Anthropic chat client. This repo is unchanged by that work and still
+uses the direct integration described above.
+
 ## Module 3 (Weeks 12-16) — AI Product Management
 
 **Curriculum asks for:** PRDs, roadmaps, ROI frameworks, strategy
@@ -146,4 +159,6 @@ un-closed gap remains Module 2's LangChain naming — retrofitting a
 LangChain layer just to match a tool name-check wasn't done; the
 underlying RAG/agentic behavior is real and demoable, and naming the
 actual stack honestly in a submission is safer than adding a framework
-dependency purely for rubric-matching.
+dependency purely for rubric-matching. (Since 2026-11-15 the agentic,
+tool-calling side of Module 2 is covered by the separate LangGraph repo
+linked above, so this repo itself still has no framework layer.)
